@@ -1231,15 +1231,31 @@ async function generateBatch() {
     batchStatusBody.scrollTop = batchStatusBody.scrollHeight;
 
     try {
-      const query    = buildQuery(name, featureType);
-      const response = await fetch(OVERPASS_URL, {
-        method:  "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body:    new URLSearchParams({ data: query }),
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status} — ${response.statusText}`);
+      const query = buildQuery(name, featureType);
 
-      const data     = await response.json();
+      // Fetch with retry — back off on 429 / rate-limit responses
+      let data;
+      const maxAttempts = 4;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const response = await fetch(OVERPASS_URL, {
+          method:  "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body:    new URLSearchParams({ data: query }),
+        });
+
+        if (response.status === 429 || response.status === 503) {
+          if (attempt === maxAttempts) throw new Error(`Rate limited after ${maxAttempts} attempts`);
+          const waitSec = attempt * 10;
+          textEl.textContent = `${name} — rate limited, waiting ${waitSec}s (attempt ${attempt}/${maxAttempts})…`;
+          await new Promise(r => setTimeout(r, waitSec * 1000));
+          continue;
+        }
+
+        if (!response.ok) throw new Error(`HTTP ${response.status} — ${response.statusText}`);
+        data = await response.json();
+        break;
+      }
+
       const elements = data.elements || [];
       if (!elements.length) throw new Error("No OSM elements found — check the name spelling");
 
@@ -1260,9 +1276,9 @@ async function generateBatch() {
       row.style.color     = "var(--red)";
     }
 
-    // Brief pause between requests to be polite to the Overpass API
+    // Pause between requests to stay within Overpass rate limits
     if (i < entries.length - 1) {
-      await new Promise(r => setTimeout(r, 1500));
+      await new Promise(r => setTimeout(r, 5000));
     }
   }
 
