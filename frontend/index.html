@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<!--
+=============================================================================
+  Canadian Water Body KML Generator — Admin Frontend
+=============================================================================
+
+SETUP (one-time, ~5 minutes)
+─────────────────────────────────────────────────────────────────────────────
+Before this page will work you need a Google OAuth 2.0 Client ID.
+
+1. Go to https://console.cloud.google.com/
+2. Create a new project (or pick an existing one).
+3. APIs & Services → OAuth consent screen
+     • User Type: External  →  Save and Continue
+     • App name: "Water Body KML"  •  Support email: bert.terhart@gmail.com
+     • Leave all other fields blank  →  Save and Continue × 3  →  Back to Dashboard
+4. APIs & Services → Credentials → + CREATE CREDENTIALS → OAuth client ID
+     • Application type: Web application
+     • Name: "Water Body KML Web Client"
+     • Authorised JavaScript origins — add ALL origins you will open this
+       file from, e.g.:
+         http://localhost
+         http://localhost:8080
+         http://127.0.0.1:8080
+         https://yourdomain.com          ← if hosting remotely
+     • Authorised redirect URIs — leave blank (not needed for Sign-In button)
+     • CREATE
+5. Copy the Client ID that appears (looks like  123….apps.googleusercontent.com)
+6. Paste it as the value of GOOGLE_CLIENT_ID below, replacing the placeholder.
+
+Note: Google Sign-In verifies the user's identity.  The email check below
+      is a client-side gate and is appropriate for a personal admin tool.
+      Do NOT store sensitive data behind this page on a public server without
+      adding server-side token verification as well.
+=============================================================================
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Water Body KML — Admin</title>
+  <script src="https://accounts.google.com/gsi/client" async></script>
+  <style>
+    /* ── Design tokens ──────────────────────────────────────────────────── */
+    :root {
+      --blue-900: #0d2b45;
+      --blue-700: #1a5276;
+      --blue-500: #2980b9;
+      --blue-300: #85c1e9;
+      --blue-100: #d6eaf8;
+      --blue-50:  #eaf4fb;
+      --teal:     #1abc9c;
+      --teal-dk:  #148f77;
+      --red:      #e74c3c;
+      --red-lt:   #fdecea;
+      --yellow:   #f39c12;
+      --yellow-lt:#fef9e7;
+      --green:    #27ae60;
+      --green-lt: #eafaf1;
+      --grey-900: #1a1a2e;
+      --grey-700: #444;
+      --grey-500: #888;
+      --grey-200: #dde;
+      --grey-100: #f4f6f8;
+      --white:    #fff;
+      --radius:   10px;
+      --shadow:   0 4px 24px rgba(0,0,0,.12);
+      --shadow-sm:0 2px 8px  rgba(0,0,0,.08);
+      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      --mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    }
+
+    /* ── Reset / base ───────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; }
+    body {
+      height: 100%;
+      font-family: var(--font);
+      background: linear-gradient(160deg, var(--blue-900) 0%, #0e4166 60%, #0d3354 100%);
+      color: var(--grey-900);
+      min-height: 100vh;
+    }
+
+    /* ── Sign-in overlay ────────────────────────────────────────────────── */
+    #signin-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+    .signin-card {
+      background: var(--white);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 3rem 2.5rem 2.5rem;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+    }
+    .signin-card .logo {
+      font-size: 3rem;
+      line-height: 1;
+      margin-bottom: .5rem;
+    }
+    .signin-card h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--blue-700);
+      margin-bottom: .25rem;
+    }
+    .signin-card p.subtitle {
+      font-size: .85rem;
+      color: var(--grey-500);
+      margin-bottom: 2rem;
+    }
+    #google-btn-container {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+    }
+    .signin-note {
+      font-size: .75rem;
+      color: var(--grey-500);
+    }
+
+    /* ── Setup warning banner ───────────────────────────────────────────── */
+    #setup-banner {
+      background: var(--yellow-lt);
+      border: 1.5px solid var(--yellow);
+      border-radius: var(--radius);
+      padding: .9rem 1.1rem;
+      margin-bottom: 1.5rem;
+      font-size: .82rem;
+      text-align: left;
+      color: #7d6008;
+      display: none;
+    }
+    #setup-banner strong { display: block; margin-bottom: .3rem; }
+    #setup-banner code {
+      background: #fef3cd;
+      border-radius: 4px;
+      padding: .1rem .35rem;
+      font-family: var(--mono);
+      font-size: .8rem;
+    }
+
+    /* ── Main app layout ────────────────────────────────────────────────── */
+    #app { display: none; min-height: 100vh; flex-direction: column; }
+
+    header {
+      background: rgba(255,255,255,.06);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,.1);
+      padding: .75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      color: var(--white);
+    }
+    header .brand { font-size: 1.05rem; font-weight: 700; flex: 1; }
+    header .brand span { opacity: .6; font-weight: 400; font-size: .85rem; margin-left: .4rem; }
+    #user-info {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      font-size: .82rem;
+      opacity: .9;
+    }
+    #user-avatar {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.4);
+      object-fit: cover;
+    }
+    #user-name { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #signout-btn {
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.3);
+      color: var(--white);
+      border-radius: 6px;
+      padding: .3rem .75rem;
+      font-size: .78rem;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    #signout-btn:hover { background: rgba(255,255,255,.28); }
+
+    main {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      padding: 2rem 1rem 3rem;
+    }
+    .main-inner { width: 100%; max-width: 640px; }
+
+    /* ── Card ───────────────────────────────────────────────────────────── */
+    .card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      margin-bottom: 1.25rem;
+    }
+    .card-header {
+      background: var(--blue-50);
+      border-bottom: 1px solid var(--blue-100);
+      padding: .9rem 1.25rem;
+      font-size: .8rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--blue-700);
+    }
+    .card-body { padding: 1.25rem; }
+
+    /* ── Form ───────────────────────────────────────────────────────────── */
+    .form-row { margin-bottom: 1rem; }
+    .form-row:last-child { margin-bottom: 0; }
+    label {
+      display: block;
+      font-size: .8rem;
+      font-weight: 600;
+      color: var(--grey-700);
+      margin-bottom: .35rem;
+    }
+    input[type="text"], select {
+      width: 100%;
+      border: 1.5px solid var(--grey-200);
+      border-radius: 7px;
+      padding: .65rem .85rem;
+      font-size: .95rem;
+      font-family: var(--font);
+      color: var(--grey-900);
+      background: var(--white);
+      transition: border-color .15s, box-shadow .15s;
+      outline: none;
+    }
+    input[type="text"]:focus, select:focus {
+      border-color: var(--blue-500);
+      box-shadow: 0 0 0 3px rgba(41,128,185,.15);
+    }
+    .hint {
+      font-size: .75rem;
+      color: var(--grey-500);
+      margin-top: .3rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      border: none;
+      border-radius: 8px;
+      padding: .7rem 1.4rem;
+      font-size: .92rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .btn-primary {
+      background: var(--blue-700);
+      color: var(--white);
+      width: 100%;
+      justify-content: center;
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--blue-500); }
+    .btn-primary:disabled { opacity: .55; cursor: not-allowed; }
+    .btn-download {
+      background: var(--teal);
+      color: var(--white);
+      width: 100%;
+      justify-content: center;
+      margin-top: .75rem;
+    }
+    .btn-download:hover { background: var(--teal-dk); }
+
+    /* ── Status area ────────────────────────────────────────────────────── */
+    #status-card { display: none; }
+
+    .status-row {
+      display: flex;
+      align-items: flex-start;
+      gap: .6rem;
+      padding: .5rem 0;
+      font-size: .88rem;
+      border-bottom: 1px solid var(--grey-100);
+    }
+    .status-row:last-child { border-bottom: none; }
+    .status-icon { font-size: 1rem; line-height: 1.4; flex-shrink: 0; }
+    .status-text { color: var(--grey-700); }
+
+    /* spinner */
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid var(--blue-300);
+      border-top-color: var(--blue-700);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Result card ────────────────────────────────────────────────────── */
+    #result-card { display: none; }
+
+    .result-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .6rem;
+      margin-bottom: 1rem;
+    }
+    .meta-item {
+      background: var(--grey-100);
+      border-radius: 7px;
+      padding: .6rem .8rem;
+    }
+    .meta-label {
+      font-size: .72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--grey-500);
+      margin-bottom: .15rem;
+    }
+    .meta-value {
+      font-size: .95rem;
+      font-weight: 700;
+      color: var(--blue-700);
+    }
+
+    /* ── Alert boxes ────────────────────────────────────────────────────── */
+    .alert {
+      border-radius: 7px;
+      padding: .8rem 1rem;
+      font-size: .85rem;
+      margin-top: .75rem;
+    }
+    .alert-error {
+      background: var(--red-lt);
+      border: 1px solid #f5b7b1;
+      color: #922b21;
+    }
+    .alert-warn {
+      background: var(--yellow-lt);
+      border: 1px solid #f9e79f;
+      color: #7d6008;
+    }
+
+    /* ── History table ──────────────────────────────────────────────────── */
+    #history-card { display: none; }
+    .history-list { list-style: none; }
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      padding: .55rem 0;
+      border-bottom: 1px solid var(--grey-100);
+      font-size: .85rem;
+    }
+    .history-item:last-child { border-bottom: none; }
+    .history-icon { font-size: 1rem; }
+    .history-name { flex: 1; font-weight: 600; color: var(--grey-900); }
+    .history-type {
+      font-size: .72rem;
+      font-weight: 700;
+      padding: .15rem .45rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+    }
+    .history-type.river { background: #d6eaf8; color: var(--blue-700); }
+    .history-type.lake  { background: #d5f5e3; color: #1a7a46; }
+    .history-pts { color: var(--grey-500); font-size: .8rem; }
+    .history-dl {
+      background: none;
+      border: 1px solid var(--grey-200);
+      border-radius: 5px;
+      padding: .2rem .55rem;
+      font-size: .75rem;
+      cursor: pointer;
+      color: var(--blue-700);
+      font-weight: 600;
+      transition: all .12s;
+    }
+    .history-dl:hover { background: var(--blue-100); border-color: var(--blue-300); }
+
+    /* ── Footer ─────────────────────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 1rem;
+      font-size: .73rem;
+      color: rgba(255,255,255,.35);
+    }
+    footer a { color: rgba(255,255,255,.5); text-decoration: none; }
+    footer a:hover { color: rgba(255,255,255,.8); }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!--  SIGN-IN SCREEN                                                        -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="signin-screen">
+  <div class="signin-card">
+    <div class="logo">🌊</div>
+    <h1>Water Body KML Generator</h1>
+    <p class="subtitle">Admin Console &mdash; Canadian Rivers &amp; Lakes</p>
+
+    <div id="setup-banner">
+      <strong>⚠ Setup required before sign-in will work</strong>
+      Replace the <code>GOOGLE_CLIENT_ID</code> placeholder near the top of
+      this file with your real OAuth 2.0 Client ID from Google Cloud Console.
+      See the instructions in the HTML comments at the top of the file.
+    </div>
+
+    <div id="google-btn-container"></div>
+    <p class="signin-note">Access is restricted to the authorised administrator account.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!--  MAIN APP (shown after successful sign-in)                             -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div id="app">
+  <header>
+    <div class="brand">
+      🌊 Water Body KML Generator <span>Admin Console</span>
+    </div>
+    <div id="user-info">
+      <img id="user-avatar" src="" alt="" />
+      <span id="user-name"></span>
+      <button id="signout-btn" onclick="signOut()">Sign out</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="main-inner">
+
+      <!-- Generate form -->
+      <div class="card">
+        <div class="card-header">Generate KML</div>
+        <div class="card-body">
+          <div class="form-row">
+            <label for="name-input">Water body name</label>
+            <input
+              type="text"
+              id="name-input"
+              placeholder='e.g. "Peace River" or "Lake Athabasca"'
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <p class="hint">
+              Must match the OpenStreetMap spelling exactly.
+              <a href="https://www.openstreetmap.org" target="_blank" rel="noopener">Search OSM</a>
+              to verify.
+            </p>
+          </div>
+          <div class="form-row">
+            <label for="type-select">Feature type</label>
+            <select id="type-select">
+              <option value="auto">Auto-detect from name</option>
+              <option value="river">River / Stream / Canal</option>
+              <option value="lake">Lake / Reservoir / Pond</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <button class="btn btn-primary" id="generate-btn" onclick="generate()">
+              Generate KML
+            </button>
+          </div>
+          <div id="form-error"></div>
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div class="card" id="status-card">
+        <div class="card-header">Progress</div>
+        <div class="card-body" id="status-body"></div>
+      </div>
+
+      <!-- Result -->
+      <div class="card" id="result-card">
+        <div class="card-header">Result</div>
+        <div class="card-body">
+          <div class="result-meta" id="result-meta"></div>
+          <button class="btn btn-download" id="download-btn">
+            ⬇ Download KML file
+          </button>
+        </div>
+      </div>
+
+      <!-- History -->
+      <div class="card" id="history-card">
+        <div class="card-header">Session history</div>
+        <div class="card-body">
+          <ul class="history-list" id="history-list"></ul>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer>
+    Data &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>
+    &nbsp;·&nbsp; Geometry via <a href="https://overpass-api.de" target="_blank" rel="noopener">Overpass API</a>
+  </footer>
+</div>
+
+<script>
+"use strict";
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  CONFIGURATION  —  replace GOOGLE_CLIENT_ID before deploying
+// ═══════════════════════════════════════════════════════════════════════════
+
+const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com";
+const ADMIN_EMAIL      = "bert.terhart@gmail.com";
+
+// ─── Constants (mirrors water_body_kml.py) ─────────────────────────────────
+
+const CANADA_BBOX      = "41.7,-141.0,83.3,-52.6";
+const OVERPASS_URL     = "https://overpass-api.de/api/interpreter";
+const OVERPASS_TIMEOUT = 180;
+
+// KML colours (AABBGGRR — Google Maps / Earth convention)
+const RIVER_LINE_COLOR  = "ffE99B3D";
+const RIVER_LINE_WIDTH  = "3";
+const LAKE_FILL_COLOR   = "60E99B3D";
+const LAKE_BORDER_COLOR = "ffE99B3D";
+const LAKE_BORDER_WIDTH = "2";
+
+// ─── State ─────────────────────────────────────────────────────────────────
+
+let currentKml      = null;   // string — KML ready for download
+let currentFilename = null;
+const history       = [];     // [{name, type, nodeCount, kml, filename}]
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  GOOGLE SIGN-IN
+// ═══════════════════════════════════════════════════════════════════════════
+
+function initGoogleSignIn() {
+  if (GOOGLE_CLIENT_ID.startsWith("YOUR_GOOGLE_CLIENT_ID")) {
+    document.getElementById("setup-banner").style.display = "block";
+    return;
+  }
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback:  handleCredentialResponse,
+    auto_select: false,
+  });
+  google.accounts.id.renderButton(
+    document.getElementById("google-btn-container"),
+    { theme: "outline", size: "large", text: "signin_with", shape: "rectangular" }
+  );
+}
+
+function handleCredentialResponse(response) {
+  // Decode the JWT payload (base64url → JSON)
+  const parts   = response.credential.split(".");
+  const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+
+  if (payload.email !== ADMIN_EMAIL) {
+    showSigninError(
+      `Access denied. This tool is restricted to the authorised administrator. ` +
+      `You signed in as ${payload.email}.`
+    );
+    google.accounts.id.disableAutoSelect();
+    return;
+  }
+
+  // Authorised — show app
+  document.getElementById("signin-screen").style.display = "none";
+  document.getElementById("app").style.display = "flex";
+
+  const avatar = document.getElementById("user-avatar");
+  if (payload.picture) { avatar.src = payload.picture; avatar.style.display = ""; }
+  else { avatar.style.display = "none"; }
+  document.getElementById("user-name").textContent = payload.name || payload.email;
+}
+
+function showSigninError(msg) {
+  const banner = document.getElementById("setup-banner");
+  banner.style.display = "block";
+  banner.innerHTML = `<strong>Sign-in failed</strong>${escXml(msg)}`;
+  banner.style.background = "#fdecea";
+  banner.style.borderColor = "#f5b7b1";
+  banner.style.color       = "#922b21";
+}
+
+function signOut() {
+  google.accounts.id.disableAutoSelect();
+  document.getElementById("app").style.display = "none";
+  document.getElementById("signin-screen").style.display = "flex";
+  // Clear state
+  currentKml = null;
+  currentFilename = null;
+  document.getElementById("status-card").style.display  = "none";
+  document.getElementById("result-card").style.display  = "none";
+}
+
+// Wait for GIS library to load then initialise
+window.addEventListener("load", () => {
+  // The GIS <script> is async; poll until it's ready
+  const t = setInterval(() => {
+    if (typeof google !== "undefined" && google.accounts) {
+      clearInterval(t);
+      initGoogleSignIn();
+    }
+  }, 100);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  FEATURE-TYPE AUTO-DETECT  (mirrors water_body_kml.py)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const LAKE_RE  = /\b(lake|lac|reservoir|pond|étang|lagoon|bay|gulf|sound|strait|inlet)\b/i;
+const RIVER_RE = /\b(river|rivière|creek|brook|stream|canal|coulee|coulée|falls)\b/i;
+
+function guessFeatureType(name) {
+  if (LAKE_RE.test(name))  return "lake";
+  if (RIVER_RE.test(name)) return "river";
+  return "river";
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  OVERPASS QUERY BUILDER  (mirrors water_body_kml.py)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function buildQuery(name, featureType) {
+  const escaped = name.replace(/"/g, '\\"');
+  const bbox    = CANADA_BBOX;
+
+  let tags;
+  if (featureType === "river") {
+    tags = [
+      '["waterway"="river"]',
+      '["waterway"="stream"]',
+      '["waterway"="canal"]',
+    ];
+  } else {
+    tags = [
+      '["natural"="water"]',
+      '["landuse"="reservoir"]',
+      '["water"="lake"]',
+      '["water"="reservoir"]',
+    ];
+  }
+
+  const clauses = [];
+  for (const tag of tags) {
+    clauses.push(`  relation["name"="${escaped}"]${tag}(${bbox});`);
+    clauses.push(`  way["name"="${escaped}"]${tag}(${bbox});`);
+  }
+
+  return `[out:json][timeout:${OVERPASS_TIMEOUT}];\n(\n${clauses.join("\n")}\n);\nout geom;`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  GEOMETRY HELPERS  (mirrors water_body_kml.py)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** Overpass geometry → array of [lon, lat] */
+function coordsFromGeometry(geometry) {
+  return geometry.map(pt => [pt.lon, pt.lat]);
+}
+
+/** [[lon,lat], …] → KML coordinate string */
+function formatCoords(coords) {
+  return coords.map(([lon, lat]) => `${lon},${lat},0`).join("\n");
+}
+
+/** Ensure polygon ring is closed (first === last point) */
+function closeRing(coords) {
+  if (!coords.length) return coords;
+  const first = coords[0], last = coords[coords.length - 1];
+  if (first[0] === last[0] && first[1] === last[1]) return coords;
+  return [...coords, first];
+}
+
+/**
+ * Greedily chain way-segments end-to-end.  Mirrors _chain_segments() in
+ * water_body_kml.py — segments may be reversed to connect.
+ * Returns an array of chained polylines.
+ */
+function chainSegments(segments) {
+  if (!segments.length) return [];
+
+  const remaining = segments.map(s => s.slice());
+  const chains    = [];
+
+  while (remaining.length) {
+    let chain   = remaining.shift();
+    let changed = true;
+
+    while (changed && remaining.length) {
+      changed = false;
+      for (let i = 0; i < remaining.length; i++) {
+        const seg  = remaining[i];
+        const cEnd = chain[chain.length - 1];
+        const cSt  = chain[0];
+
+        const eq = (a, b) => a[0] === b[0] && a[1] === b[1];
+
+        if (eq(cEnd, seg[0])) {
+          chain.push(...seg.slice(1));
+        } else if (eq(cEnd, seg[seg.length - 1])) {
+          chain.push(...seg.slice(0, -1).reverse());
+        } else if (eq(cSt, seg[seg.length - 1])) {
+          chain = [...seg, ...chain.slice(1)];
+        } else if (eq(cSt, seg[0])) {
+          chain = [...seg.slice().reverse(), ...chain.slice(1)];
+        } else {
+          continue;
+        }
+        remaining.splice(i, 1);
+        changed = true;
+        break;
+      }
+    }
+    chains.push(chain);
+  }
+  return chains;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  KML BUILDERS  (mirrors water_body_kml.py)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** Escape a string for embedding in XML text / attribute content. */
+function escXml(s) {
+  return String(s)
+    .replace(/&/g,  "&amp;")
+    .replace(/</g,  "&lt;")
+    .replace(/>/g,  "&gt;")
+    .replace(/"/g,  "&quot;");
+}
+
+function riverStyleKml(id) {
+  return `<Style id="${id}">
+    <LineStyle><color>${RIVER_LINE_COLOR}</color><width>${RIVER_LINE_WIDTH}</width></LineStyle>
+    <PolyStyle><fill>0</fill></PolyStyle>
+  </Style>`;
+}
+
+function lakeStyleKml(id) {
+  return `<Style id="${id}">
+    <LineStyle><color>${LAKE_BORDER_COLOR}</color><width>${LAKE_BORDER_WIDTH}</width></LineStyle>
+    <PolyStyle><color>${LAKE_FILL_COLOR}</color><fill>1</fill></PolyStyle>
+  </Style>`;
+}
+
+/**
+ * Build river Placemark XML strings.
+ * Returns { placemarks: string[], nodeCount: number }
+ */
+function buildRiverPlacemarks(name, elements, styleId) {
+  const allSegs = [];
+
+  for (const el of elements) {
+    if (el.type === "way") {
+      const c = coordsFromGeometry(el.geometry || []);
+      if (c.length) allSegs.push(c);
+    } else if (el.type === "relation") {
+      for (const m of (el.members || [])) {
+        if (m.type === "way" && m.geometry) {
+          const c = coordsFromGeometry(m.geometry);
+          if (c.length) allSegs.push(c);
+        }
+      }
+    }
+  }
+
+  const chains = chainSegments(allSegs);
+  let nodeCount = 0;
+
+  const placemarks = chains.map((chain, idx) => {
+    nodeCount += chain.length;
+    const label = idx === 0 ? escXml(name) : escXml(`${name} (${idx + 1})`);
+    return `<Placemark>
+      <name>${label}</name>
+      <styleUrl>#${styleId}</styleUrl>
+      <LineString>
+        <tessellate>1</tessellate>
+        <coordinates>${formatCoords(chain)}</coordinates>
+      </LineString>
+    </Placemark>`;
+  });
+
+  return { placemarks, nodeCount };
+}
+
+/** Collect all way geometries for a given role from relation members. */
+function ringFromMembers(members, role) {
+  return members
+    .filter(m => m.type === "way" && m.role === role && m.geometry)
+    .map(m => coordsFromGeometry(m.geometry));
+}
+
+/**
+ * Build lake Placemark XML strings.
+ * Returns { placemarks: string[], nodeCount: number }
+ */
+function buildLakePlacemarks(name, elements, styleId) {
+  const placemarks = [];
+  let nodeCount = 0;
+
+  for (const el of elements) {
+    if (el.type === "way") {
+      let coords = coordsFromGeometry(el.geometry || []);
+      if (coords.length < 3) continue;
+      coords = closeRing(coords);
+      nodeCount += coords.length;
+      placemarks.push(`<Placemark>
+        <name>${escXml(name)}</name>
+        <styleUrl>#${styleId}</styleUrl>
+        <Polygon>
+          <tessellate>1</tessellate>
+          <outerBoundaryIs><LinearRing>
+            <coordinates>${formatCoords(coords)}</coordinates>
+          </LinearRing></outerBoundaryIs>
+        </Polygon>
+      </Placemark>`);
+
+    } else if (el.type === "relation") {
+      const outerSegs = ringFromMembers(el.members || [], "outer");
+      const innerSegs = ringFromMembers(el.members || [], "inner");
+      const outerChains = chainSegments(outerSegs);
+      const innerChains = chainSegments(innerSegs);
+
+      if (!outerChains.length) continue;
+
+      outerChains.forEach((outer, idx) => {
+        outer = closeRing(outer);
+        nodeCount += outer.length;
+        const label = idx === 0 ? escXml(name) : escXml(`${name} (${idx + 1})`);
+
+        const innerXml = innerChains.map(inner => {
+          inner = closeRing(inner);
+          nodeCount += inner.length;
+          return `<innerBoundaryIs><LinearRing>
+            <coordinates>${formatCoords(inner)}</coordinates>
+          </LinearRing></innerBoundaryIs>`;
+        }).join("\n");
+
+        placemarks.push(`<Placemark>
+          <name>${label}</name>
+          <styleUrl>#${styleId}</styleUrl>
+          <Polygon>
+            <tessellate>1</tessellate>
+            <outerBoundaryIs><LinearRing>
+              <coordinates>${formatCoords(outer)}</coordinates>
+            </LinearRing></outerBoundaryIs>
+            ${innerXml}
+          </Polygon>
+        </Placemark>`);
+      });
+    }
+  }
+
+  return { placemarks, nodeCount };
+}
+
+/** Build and return a complete KML string. */
+function buildKml(name, elements, featureType) {
+  let styleId, styleKml, result;
+
+  if (featureType === "river") {
+    styleId  = "riverStyle";
+    styleKml = riverStyleKml(styleId);
+    result   = buildRiverPlacemarks(name, elements, styleId);
+  } else {
+    styleId  = "lakeStyle";
+    styleKml = lakeStyleKml(styleId);
+    result   = buildLakePlacemarks(name, elements, styleId);
+  }
+
+  if (!result.placemarks.length) {
+    throw new Error(
+      `No drawable geometry found for "${name}" as a ${featureType}. ` +
+      `Try switching the feature type, or verify the spelling on OpenStreetMap.`
+    );
+  }
+
+  const kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>${escXml(name)}</name>
+    ${styleKml}
+    ${result.placemarks.join("\n    ")}
+  </Document>
+</kml>`;
+
+  return { kml, nodeCount: result.nodeCount, segmentCount: result.placemarks.length };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  MAIN GENERATE FLOW
+// ═══════════════════════════════════════════════════════════════════════════
+
+function sanitizeFilename(name) {
+  return name.replace(/[^\w\-]/g, "_").replace(/^_+|_+$/g, "") + ".kml";
+}
+
+async function generate() {
+  const nameRaw = document.getElementById("name-input").value.trim();
+  const typeVal = document.getElementById("type-select").value;
+
+  // ── Validate
+  const formError = document.getElementById("form-error");
+  formError.innerHTML = "";
+  if (!nameRaw) {
+    formError.innerHTML = `<div class="alert alert-error">Please enter a water body name.</div>`;
+    return;
+  }
+
+  const featureType = typeVal === "auto" ? guessFeatureType(nameRaw) : typeVal;
+  const filename    = sanitizeFilename(nameRaw);
+
+  // ── Reset UI
+  currentKml      = null;
+  currentFilename = null;
+  document.getElementById("result-card").style.display  = "none";
+  document.getElementById("generate-btn").disabled      = true;
+
+  const statusCard = document.getElementById("status-card");
+  const statusBody = document.getElementById("status-body");
+  statusCard.style.display = "block";
+  statusBody.innerHTML     = "";
+
+  function addStatus(icon, text, isSpinner = false) {
+    const row  = document.createElement("div");
+    row.className = "status-row";
+    const iconEl = document.createElement(isSpinner ? "div" : "span");
+    iconEl.className = isSpinner ? "spinner" : "status-icon";
+    if (!isSpinner) iconEl.textContent = icon;
+    const textEl = document.createElement("span");
+    textEl.className = "status-text";
+    textEl.textContent = text;
+    row.appendChild(iconEl);
+    row.appendChild(textEl);
+    statusBody.appendChild(row);
+    return { row, textEl, iconEl };
+  }
+
+  // Step 1 — query
+  const { row: qRow, textEl: qText, iconEl: qIcon } =
+    addStatus(null, `Querying Overpass API for "${nameRaw}" (${featureType})…`, true);
+
+  let data;
+  try {
+    const query    = buildQuery(nameRaw, featureType);
+    const response = await fetch(OVERPASS_URL, {
+      method:  "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body:    new URLSearchParams({ data: query }),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} — ${response.statusText}`);
+    }
+    data = await response.json();
+  } catch (err) {
+    qIcon.className = "status-icon";
+    qIcon.textContent = "✗";
+    qText.textContent = `Overpass query failed: ${err.message}`;
+    qRow.style.color = "var(--red)";
+    document.getElementById("generate-btn").disabled = false;
+    return;
+  }
+
+  qIcon.className    = "status-icon";
+  qIcon.textContent  = "✓";
+  const elCount = (data.elements || []).length;
+  qText.textContent = `Received ${elCount} OSM element(s).`;
+
+  if (!elCount) {
+    addStatus("⚠", `No elements found. Check the name spelling on OpenStreetMap, or try a different feature type.`);
+    document.getElementById("generate-btn").disabled = false;
+    return;
+  }
+
+  // Step 2 — build KML
+  const { row: bRow, textEl: bText, iconEl: bIcon } =
+    addStatus(null, "Building KML…", true);
+
+  let kmlResult;
+  try {
+    kmlResult = buildKml(nameRaw, data.elements, featureType);
+  } catch (err) {
+    bIcon.className    = "status-icon";
+    bIcon.textContent  = "✗";
+    bText.textContent  = err.message;
+    bRow.style.color   = "var(--red)";
+    document.getElementById("generate-btn").disabled = false;
+    return;
+  }
+
+  bIcon.className   = "status-icon";
+  bIcon.textContent = "✓";
+  bText.textContent =
+    `Built ${kmlResult.segmentCount} placemark(s) with ~${kmlResult.nodeCount.toLocaleString()} coordinate point(s).`;
+
+  // ── Show result card
+  currentKml      = kmlResult.kml;
+  currentFilename = filename;
+
+  const meta = document.getElementById("result-meta");
+  meta.innerHTML = `
+    <div class="meta-item">
+      <div class="meta-label">Name</div>
+      <div class="meta-value">${escXml(nameRaw)}</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Type</div>
+      <div class="meta-value" style="text-transform:capitalize">${featureType}</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Placemarks</div>
+      <div class="meta-value">${kmlResult.segmentCount.toLocaleString()}</div>
+    </div>
+    <div class="meta-item">
+      <div class="meta-label">Coordinate points</div>
+      <div class="meta-value">~${kmlResult.nodeCount.toLocaleString()}</div>
+    </div>`;
+
+  const dlBtn = document.getElementById("download-btn");
+  dlBtn.textContent = `⬇ Download ${filename}`;
+  dlBtn.onclick     = () => downloadKml(currentKml, currentFilename);
+  document.getElementById("result-card").style.display = "block";
+
+  // ── Add to history
+  history.unshift({ name: nameRaw, type: featureType, nodeCount: kmlResult.nodeCount,
+                    kml: kmlResult.kml, filename });
+  renderHistory();
+
+  document.getElementById("generate-btn").disabled = false;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  DOWNLOAD
+// ═══════════════════════════════════════════════════════════════════════════
+
+function downloadKml(kml, filename) {
+  const blob = new Blob([kml], { type: "application/vnd.google-earth.kml+xml" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  HISTORY
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderHistory() {
+  if (!history.length) return;
+  const card = document.getElementById("history-card");
+  const list = document.getElementById("history-list");
+  card.style.display = "block";
+  list.innerHTML = history.map((h, i) => `
+    <li class="history-item">
+      <span class="history-icon">${h.type === "lake" ? "🏞" : "〰"}</span>
+      <span class="history-name">${escXml(h.name)}</span>
+      <span class="history-type ${h.type}">${h.type}</span>
+      <span class="history-pts">~${h.nodeCount.toLocaleString()} pts</span>
+      <button class="history-dl" onclick="downloadKml(history[${i}].kml, history[${i}].filename)">
+        ⬇ KML
+      </button>
+    </li>`).join("");
+}
+
+// ── Allow Enter key to trigger generate
+document.getElementById("name-input")
+  .addEventListener("keydown", e => { if (e.key === "Enter") generate(); });
+</script>
+</body>
+</html>
