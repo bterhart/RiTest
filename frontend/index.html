@@ -40,6 +40,7 @@ Note: Google Sign-In verifies the user's identity.  The email check below
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Water Body KML — Admin</title>
   <script src="https://accounts.google.com/gsi/client" async></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
     /* ── Design tokens ──────────────────────────────────────────────────── */
     :root {
@@ -385,6 +386,27 @@ Note: Google Sign-In verifies the user's identity.  The email check below
     }
     .history-dl:hover { background: var(--blue-100); border-color: var(--blue-300); }
 
+    /* ── File input ─────────────────────────────────────────────────────── */
+    input[type="file"] {
+      width: 100%;
+      border: 1.5px dashed var(--grey-200);
+      border-radius: 7px;
+      padding: .65rem .85rem;
+      font-size: .9rem;
+      font-family: var(--font);
+      color: var(--grey-700);
+      background: var(--grey-100);
+      cursor: pointer;
+    }
+    input[type="file"]:hover {
+      border-color: var(--blue-300);
+      background: var(--blue-50);
+    }
+
+    /* ── Batch progress ──────────────────────────────────────────────────── */
+    #batch-status-body { max-height: 300px; overflow-y: auto; }
+    #batch-counter { font-weight: 400; letter-spacing: 0; text-transform: none; opacity: .7; margin-left: .4rem; font-size: .78rem; }
+
     /* ── Footer ─────────────────────────────────────────────────────────── */
     footer {
       text-align: center;
@@ -486,6 +508,45 @@ Note: Google Sign-In verifies the user's identity.  The email check below
           <div class="result-meta" id="result-meta"></div>
           <button class="btn btn-download" id="download-btn">
             ⬇ Download KML file
+          </button>
+        </div>
+      </div>
+
+      <!-- Batch CSV Upload -->
+      <div class="card">
+        <div class="card-header">Batch CSV Import</div>
+        <div class="card-body">
+          <div class="form-row">
+            <label for="csv-input">CSV file</label>
+            <input type="file" id="csv-input" accept=".csv,text/csv" />
+            <p class="hint">
+              One row per water body. Columns: <code>name</code> (required),
+              <code>type</code> (optional: <code>auto</code> / <code>river</code> / <code>lake</code>).
+              A header row is optional. All matching KML files will be bundled into a ZIP.
+            </p>
+          </div>
+          <div class="form-row">
+            <button class="btn btn-primary" id="batch-btn" onclick="generateBatch()">
+              Process Batch &amp; Download ZIP
+            </button>
+          </div>
+          <div id="batch-error"></div>
+        </div>
+      </div>
+
+      <!-- Batch Progress -->
+      <div class="card" id="batch-status-card" style="display:none">
+        <div class="card-header">Batch Progress <span id="batch-counter"></span></div>
+        <div class="card-body" id="batch-status-body"></div>
+      </div>
+
+      <!-- Batch Result -->
+      <div class="card" id="batch-result-card" style="display:none">
+        <div class="card-header">Batch Result</div>
+        <div class="card-body">
+          <div id="batch-result-meta"></div>
+          <button class="btn btn-download" id="batch-download-btn">
+            ⬇ Download ZIP
           </button>
         </div>
       </div>
@@ -1075,6 +1136,186 @@ function renderHistory() {
 // ── Allow Enter key to trigger generate
 document.getElementById("name-input")
   .addEventListener("keydown", e => { if (e.key === "Enter") generate(); });
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  CSV PARSING
+// ═══════════════════════════════════════════════════════════════════════════
+
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+  if (!lines.length) return [];
+
+  const rows = lines.map(line => {
+    const fields = [];
+    let cur = "", inQuote = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') { inQuote = !inQuote; }
+      else if (ch === "," && !inQuote) { fields.push(cur.trim()); cur = ""; }
+      else { cur += ch; }
+    }
+    fields.push(cur.trim());
+    return fields;
+  });
+
+  // Skip header row if first cell is a known header label
+  const firstLower = rows[0][0].toLowerCase().replace(/[^a-z]/g, "");
+  const dataRows = ["name", "waterbody", "waterbodies", "feature"].includes(firstLower)
+    ? rows.slice(1)
+    : rows;
+
+  return dataRows
+    .filter(r => r[0])
+    .map(r => ({
+      name: r[0].replace(/^["']|["']$/g, "").trim(),
+      type: (r[1] || "auto").toLowerCase().trim(),
+    }));
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  BATCH GENERATE
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function generateBatch() {
+  const fileInput  = document.getElementById("csv-input");
+  const batchError = document.getElementById("batch-error");
+  batchError.innerHTML = "";
+
+  if (!fileInput.files.length) {
+    batchError.innerHTML = `<div class="alert alert-error">Please select a CSV file.</div>`;
+    return;
+  }
+
+  const text    = await fileInput.files[0].text();
+  const entries = parseCSV(text);
+
+  if (!entries.length) {
+    batchError.innerHTML = `<div class="alert alert-error">No valid rows found in the CSV file.</div>`;
+    return;
+  }
+
+  // ── Reset UI
+  const batchStatusCard  = document.getElementById("batch-status-card");
+  const batchStatusBody  = document.getElementById("batch-status-body");
+  const batchResultCard  = document.getElementById("batch-result-card");
+  const batchBtn         = document.getElementById("batch-btn");
+  const batchCounter     = document.getElementById("batch-counter");
+
+  batchStatusCard.style.display = "block";
+  batchResultCard.style.display = "none";
+  batchStatusBody.innerHTML     = "";
+  batchBtn.disabled             = true;
+
+  const results = [];  // { name, filename, kml, nodeCount }
+  const failed  = [];  // { name, reason }
+
+  for (let i = 0; i < entries.length; i++) {
+    const { name, type } = entries[i];
+    batchCounter.textContent = `(${i + 1} / ${entries.length})`;
+
+    const featureType = (type === "auto" || !["river", "lake"].includes(type))
+      ? guessFeatureType(name)
+      : type;
+
+    // Add a status row with spinner
+    const row     = document.createElement("div");
+    row.className = "status-row";
+    const spinner = document.createElement("div");
+    spinner.className = "spinner";
+    const textEl  = document.createElement("span");
+    textEl.className = "status-text";
+    textEl.textContent = `${name} (${featureType})…`;
+    row.appendChild(spinner);
+    row.appendChild(textEl);
+    batchStatusBody.appendChild(row);
+    batchStatusBody.scrollTop = batchStatusBody.scrollHeight;
+
+    try {
+      const query    = buildQuery(name, featureType);
+      const response = await fetch(OVERPASS_URL, {
+        method:  "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body:    new URLSearchParams({ data: query }),
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status} — ${response.statusText}`);
+
+      const data     = await response.json();
+      const elements = data.elements || [];
+      if (!elements.length) throw new Error("No OSM elements found — check the name spelling");
+
+      const kmlResult = buildKml(name, elements, featureType);
+      const filename  = sanitizeFilename(name);
+      results.push({ name, filename, kml: kmlResult.kml, nodeCount: kmlResult.nodeCount });
+
+      spinner.className   = "status-icon";
+      spinner.textContent = "✓";
+      textEl.textContent  =
+        `${name} — ${kmlResult.segmentCount} placemark(s), ~${kmlResult.nodeCount.toLocaleString()} pts`;
+
+    } catch (err) {
+      failed.push({ name, reason: err.message });
+      spinner.className   = "status-icon";
+      spinner.textContent = "✗";
+      textEl.textContent  = `${name} — ${err.message}`;
+      row.style.color     = "var(--red)";
+    }
+
+    // Brief pause between requests to be polite to the Overpass API
+    if (i < entries.length - 1) {
+      await new Promise(r => setTimeout(r, 1500));
+    }
+  }
+
+  batchCounter.textContent = `(done)`;
+  batchBtn.disabled        = false;
+
+  if (!results.length) {
+    document.getElementById("batch-result-meta").innerHTML =
+      `<div class="alert alert-error">All entries failed. No ZIP to download.</div>`;
+    batchResultCard.style.display = "block";
+    return;
+  }
+
+  // ── Build ZIP
+  const zip = new JSZip();
+  for (const r of results) {
+    zip.file(r.filename, r.kml);
+  }
+  const zipBlob = await zip.generateAsync({ type: "blob" });
+
+  // ── Show result card
+  const successCount = results.length;
+  const failCount    = failed.length;
+  let metaHtml = `
+    <div class="result-meta">
+      <div class="meta-item">
+        <div class="meta-label">Successful</div>
+        <div class="meta-value">${successCount}</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Failed</div>
+        <div class="meta-value" style="color:${failCount ? "var(--red)" : "inherit"}">${failCount}</div>
+      </div>
+    </div>`;
+  if (failCount) {
+    metaHtml += `<div class="alert alert-warn">
+      Failed entries: ${failed.map(f => escXml(f.name)).join(", ")}
+    </div>`;
+  }
+  document.getElementById("batch-result-meta").innerHTML = metaHtml;
+
+  const dlBtn       = document.getElementById("batch-download-btn");
+  dlBtn.textContent = `⬇ Download waterways.zip (${successCount} KML file${successCount !== 1 ? "s" : ""})`;
+  dlBtn.onclick     = () => {
+    const url = URL.createObjectURL(zipBlob);
+    const a   = document.createElement("a");
+    a.href     = url;
+    a.download = "waterways.zip";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  };
+  batchResultCard.style.display = "block";
+}
 </script>
 </body>
 </html>
