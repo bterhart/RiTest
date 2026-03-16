@@ -815,13 +815,22 @@ const SCORED_STEPS   = QUESTION_STEPS.filter(s => s.scored);
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  SCORING
+//  Raw option values (0–100) are passed through a power curve before averaging.
+//  Exponent > 1 makes the curve convex: easy to score low, hard to score high.
+//  e.g. raw 65 → ~46, raw 50 → ~29, raw 35 → ~15, raw 10 → ~2
 // ─────────────────────────────────────────────────────────────────────────────
+const SCORE_EXPONENT = 1.8;
+
+function curveScore(raw) {
+  return Math.max(1, Math.round(Math.pow(raw / 100, SCORE_EXPONENT) * 100));
+}
+
 function computeScores() {
   const buckets = { marketing: [], acquisition: [], retention: [] };
   SCORED_STEPS.forEach(s => {
     const ans = state.answers[s.id];
     if (ans !== undefined && s.pillar && !isNaN(Number(ans)))
-      buckets[s.pillar].push(Number(ans));
+      buckets[s.pillar].push(curveScore(Number(ans)));
   });
   const avg = arr => arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : 50;
   const sc = {
