@@ -31,7 +31,7 @@
       align-items: center;
     }
 
-    /* ── Progress bar ──────────────────────────────────────────────── */
+    /* ── Progress bar ─────────────────────────────────────────────── */
     #progressWrap {
       position: fixed;
       top: 0; left: 0; right: 0;
@@ -63,7 +63,7 @@
       white-space: nowrap;
     }
 
-    /* ── Layout ────────────────────────────────────────────────────── */
+    /* ── Layout ───────────────────────────────────────────────────── */
     #container {
       width: 100%;
       max-width: 640px;
@@ -74,7 +74,7 @@
       justify-content: center;
     }
 
-    /* ── Step animation ────────────────────────────────────────────── */
+    /* ── Step animation ───────────────────────────────────────────── */
     .step {
       width: 100%;
       animation: fadeUp 0.35s ease both;
@@ -84,7 +84,7 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* ── Typography ────────────────────────────────────────────────── */
+    /* ── Typography ───────────────────────────────────────────────── */
     .step-label {
       font-family: Arial, sans-serif;
       font-size: 11px;
@@ -109,7 +109,7 @@
       margin-bottom: 30px;
     }
 
-    /* ── Options ───────────────────────────────────────────────────── */
+    /* ── Options ──────────────────────────────────────────────────── */
     .options {
       display: flex;
       flex-direction: column;
@@ -157,13 +157,13 @@
       transform: rotate(-45deg) translate(1px, -1px);
     }
 
-    /* ── Insight card ──────────────────────────────────────────────── */
+    /* ── Insight card ─────────────────────────────────────────────── */
     .insight-card {
       background: var(--insight-bg);
       border: 1px solid var(--insight-border);
       border-left: 4px solid var(--primary);
       border-radius: 14px;
-      padding: 26px 24px;
+      padding: 24px;
       margin-bottom: 32px;
     }
     .insight-eyebrow {
@@ -176,11 +176,11 @@
       margin-bottom: 8px;
     }
     .insight-stat {
-      font-size: clamp(32px, 6vw, 48px);
+      font-size: clamp(30px, 6vw, 46px);
       font-weight: 700;
       color: var(--primary);
       line-height: 1;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
     .insight-body {
       font-family: Arial, sans-serif;
@@ -189,7 +189,60 @@
       color: #374151;
     }
 
-    /* ── Buttons ───────────────────────────────────────────────────── */
+    /* ── Bar chart ────────────────────────────────────────────────── */
+    .bar-chart {
+      margin-top: 22px;
+      padding-top: 4px;
+      border-top: 1px solid var(--insight-border);
+    }
+    .bc-title {
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+      color: var(--muted);
+      font-style: italic;
+      margin-bottom: 14px;
+    }
+    .bc-body {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+      height: 152px;
+    }
+    .bc-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 0;
+    }
+    .bc-val {
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      height: 18px;
+      line-height: 18px;
+      opacity: 0;
+      white-space: nowrap;
+      transition: opacity 0.35s ease;
+    }
+    .bc-spacer { flex: 1; }
+    .bc-fill {
+      width: 100%;
+      height: 0;
+      border-radius: 4px 4px 0 0;
+      transition: height 0.72s cubic-bezier(0.34, 1.3, 0.64, 1);
+    }
+    .bc-label {
+      font-family: Arial, sans-serif;
+      font-size: 9.5px;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 6px;
+      line-height: 1.35;
+      height: 28px;
+    }
+
+    /* ── Buttons ──────────────────────────────────────────────────── */
     .btn {
       display: inline-flex;
       align-items: center;
@@ -220,7 +273,7 @@
     .btn-full { width: 100%; }
     .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
 
-    /* ── Welcome ───────────────────────────────────────────────────── */
+    /* ── Welcome ──────────────────────────────────────────────────── */
     .welcome-badge {
       display: inline-flex;
       align-items: center;
@@ -234,11 +287,7 @@
       color: #7a5a20;
       margin-bottom: 26px;
     }
-    .badge-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--accent);
-    }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
     .welcome-title {
       font-size: clamp(28px, 5vw, 42px);
       font-weight: 700;
@@ -269,7 +318,7 @@
     }
     .meta-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
 
-    /* ── Email gate ────────────────────────────────────────────────── */
+    /* ── Email gate ───────────────────────────────────────────────── */
     .text-input {
       width: 100%;
       padding: 16px 20px;
@@ -292,7 +341,53 @@
       margin-top: 10px;
     }
 
-    /* ── Results ───────────────────────────────────────────────────── */
+    /* ── Loading screen ───────────────────────────────────────────── */
+    .loading-step {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 340px;
+      padding: 20px 0;
+    }
+    .loading-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 30px;
+    }
+    .loading-title {
+      font-size: clamp(20px, 4vw, 27px);
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 10px;
+      line-height: 1.3;
+      max-width: 380px;
+    }
+    .loading-sub {
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 38px;
+      line-height: 1.6;
+      max-width: 340px;
+    }
+    .loading-track {
+      width: 100%;
+      max-width: 300px;
+      height: 6px;
+      background: var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .loading-fill {
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 999px;
+    }
+
+    /* ── Results ──────────────────────────────────────────────────── */
     .results-header { text-align: center; margin-bottom: 36px; }
     .score-ring {
       width: 148px; height: 148px;
@@ -340,16 +435,16 @@
     .pillar-insight { font-family: Arial, sans-serif; font-size: 13px; color: #374151; line-height: 1.65; }
 
     /* Score tier colours */
-    .tier-strong     { background: #dcfce7; color: #166534; }
-    .bar-strong      { background: #22c55e; }
-    .tier-growing    { background: #fef9c3; color: #854d0e; }
-    .bar-growing     { background: #eab308; }
-    .tier-opportunity{ background: #ffedd5; color: #9a3412; }
-    .bar-opportunity { background: #f97316; }
-    .tier-critical   { background: #fee2e2; color: #991b1b; }
-    .bar-critical    { background: #ef4444; }
+    .tier-strong      { background: #dcfce7; color: #166534; }
+    .bar-strong       { background: #22c55e; }
+    .tier-growing     { background: #fef9c3; color: #854d0e; }
+    .bar-growing      { background: #eab308; }
+    .tier-opportunity { background: #ffedd5; color: #9a3412; }
+    .bar-opportunity  { background: #f97316; }
+    .tier-critical    { background: #fee2e2; color: #991b1b; }
+    .bar-critical     { background: #ef4444; }
 
-    /* ── CTA box ───────────────────────────────────────────────────── */
+    /* ── CTA box ──────────────────────────────────────────────────── */
     .cta-box {
       background: linear-gradient(135deg, var(--primary), var(--primary-light));
       border-radius: 16px;
@@ -362,28 +457,25 @@
     .cta-box p  { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.65; opacity: 0.88; margin-bottom: 24px; }
 
     .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
-
     .retake-link {
-      display: block;
-      text-align: center;
+      display: inline;
       font-family: Arial, sans-serif;
       font-size: 12px;
       color: var(--muted);
       cursor: pointer;
       text-decoration: underline;
-      margin-top: 10px;
     }
 
     @media (max-width: 480px) {
       #container { padding: 80px 16px 40px; }
       .option { padding: 13px 15px; font-size: 14px; }
       .pillar-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .bc-label { font-size: 8.5px; }
     }
   </style>
 </head>
 <body>
 
-<!-- Progress bar -->
 <div id="progressWrap">
   <div class="progress-track">
     <div class="progress-fill" id="progressFill" style="width:0%"></div>
@@ -398,14 +490,11 @@
 <script>
 // ─────────────────────────────────────────────────────────────────────────────
 //  STEPS
-//  type: 'welcome' | 'question' | 'insight' | 'email_gate' | 'results'
-//  pillar: 'marketing' | 'acquisition' | 'retention' | null
-//  scored: true means the option's numeric value feeds into the pillar score
 // ─────────────────────────────────────────────────────────────────────────────
 const STEPS = [
   { type: 'welcome' },
 
-  // ── Context questions (not scored) ───────────────────────────────────────
+  // ── Context (unscored) ────────────────────────────────────────────────────
   {
     type: 'question', id: 'services',
     label: 'Your Practice',
@@ -430,15 +519,15 @@ const STEPS = [
     sub: 'Include form fills, DMs, calls, and walk-ins.',
     multi: false,
     options: [
-      { text: 'Fewer than 25',   value: 1 },
-      { text: '25 – 75',         value: 2 },
-      { text: '75 – 150',        value: 3 },
-      { text: 'More than 150',   value: 4 },
+      { text: 'Fewer than 25',  value: 1 },
+      { text: '25 – 75',        value: 2 },
+      { text: '75 – 150',       value: 3 },
+      { text: 'More than 150',  value: 4 },
     ],
     pillar: null, scored: false,
   },
 
-  // ── Insight 1 ─────────────────────────────────────────────────────────────
+  // ── Insight 1: 8–12% conversion benchmark ────────────────────────────────
   {
     type: 'insight',
     eyebrow: 'Industry Benchmark',
@@ -446,18 +535,17 @@ const STEPS = [
     body: 'Medspas typically convert only 8% to 12% of new leads into booked consultations — meaning <strong>roughly 9 out of 10 potential patients never make it onto your calendar.</strong> The gap is almost always a systems problem, not a service problem.',
   },
 
-  // ── Lead acquisition ──────────────────────────────────────────────────────
+  // ── Acquisition ───────────────────────────────────────────────────────────
   {
     type: 'question', id: 'lead_to_consult',
     label: 'Lead Conversion',
     title: 'What percentage of your leads turn into booked consultations?',
-    sub: null,
-    multi: false,
+    sub: null, multi: false,
     options: [
-      { text: 'Less than 10%',    value: 10 },
-      { text: '10% – 25%',        value: 35 },
-      { text: '25% – 50%',        value: 65 },
-      { text: 'More than 50%',    value: 100 },
+      { text: 'Less than 10%',   value: 10 },
+      { text: '10% – 25%',       value: 35 },
+      { text: '25% – 50%',       value: 65 },
+      { text: 'More than 50%',   value: 100 },
     ],
     pillar: 'acquisition', scored: true,
   },
@@ -477,7 +565,7 @@ const STEPS = [
     pillar: 'acquisition', scored: true,
   },
 
-  // ── Insight 2 ─────────────────────────────────────────────────────────────
+  // ── Insight 2: 21× speed-to-lead ─────────────────────────────────────────
   {
     type: 'insight',
     eyebrow: 'Response Speed Impact',
@@ -492,20 +580,37 @@ const STEPS = [
     sub: 'Describe your typical follow-up process.',
     multi: false,
     options: [
-      { text: 'Automated multi-step sequence — SMS + email over several days',  value: 100 },
-      { text: 'A few manual follow-ups spread over 1–2 days',                   value: 50 },
-      { text: 'One attempt, then we move on',                                   value: 20 },
-      { text: 'No formal follow-up process',                                    value: 5 },
+      { text: 'Automated multi-step sequence — SMS + email over several days', value: 100 },
+      { text: 'A few manual follow-ups spread over 1–2 days',                  value: 50 },
+      { text: 'One attempt, then we move on',                                  value: 20 },
+      { text: 'No formal follow-up process',                                   value: 5 },
     ],
     pillar: 'acquisition', scored: true,
+  },
+
+  // ── Insight 3: Nurture persistence — BAR CHART ────────────────────────────
+  {
+    type: 'insight',
+    eyebrow: 'Lead Nurture Reality',
+    stat: '80%',
+    body: 'of sales require <strong>5 or more follow-up attempts</strong>. Yet most medspas make 1–2 attempts and move on — permanently abandoning leads that would have converted with a little more persistence.',
+    chart: {
+      title: 'Cumulative % of leads that convert, by follow-up attempt',
+      bars: [
+        { label: '1 touch',    pct: 20,  val: '20%',  color: '#ef4444' },
+        { label: '2 touches',  pct: 33,  val: '33%',  color: '#f97316' },
+        { label: '3 touches',  pct: 47,  val: '47%',  color: '#eab308' },
+        { label: '4 touches',  pct: 57,  val: '57%',  color: '#4ade80' },
+        { label: '5+ touches', pct: 80,  val: '80%',  color: 'var(--accent)', highlight: true },
+      ],
+    },
   },
 
   {
     type: 'question', id: 'noshow_rate',
     label: 'Appointment Integrity',
     title: 'What\'s your current no-show and last-minute cancellation rate?',
-    sub: null,
-    multi: false,
+    sub: null, multi: false,
     options: [
       { text: 'Under 5%',    value: 100 },
       { text: '5% – 15%',   value: 75 },
@@ -515,7 +620,7 @@ const STEPS = [
     pillar: 'acquisition', scored: true,
   },
 
-  // ── Insight 3 ─────────────────────────────────────────────────────────────
+  // ── Insight 4: $200 no-show cost ──────────────────────────────────────────
   {
     type: 'insight',
     eyebrow: 'The Cost of No-Shows',
@@ -527,15 +632,31 @@ const STEPS = [
     type: 'question', id: 'reminders',
     label: 'Reminder Systems',
     title: 'Do you have an automated appointment reminder and confirmation system?',
-    sub: null,
-    multi: false,
+    sub: null, multi: false,
     options: [
-      { text: 'Yes — automated SMS + email with 2-way confirmation',    value: 100 },
-      { text: 'Mostly manual — staff texts or calls individually',      value: 60 },
-      { text: 'We send reminders occasionally, not consistently',       value: 28 },
-      { text: 'No reminder system in place',                            value: 5 },
+      { text: 'Yes — automated SMS + email with 2-way confirmation',  value: 100 },
+      { text: 'Mostly manual — staff texts or calls individually',     value: 60 },
+      { text: 'We send reminders occasionally, not consistently',      value: 28 },
+      { text: 'No reminder system in place',                           value: 5 },
     ],
     pillar: 'acquisition', scored: true,
+  },
+
+  // ── Insight 5: True cost of a leaked lead — BAR CHART ────────────────────
+  {
+    type: 'insight',
+    eyebrow: 'The True Cost of a Leaked Lead',
+    stat: '$4,000',
+    body: 'At $200 per paid lead and a 5% conversion rate, you\'re effectively <strong>paying $4,000 for every booked consultation.</strong> Doubling your conversion rate cuts that in half — without spending an extra dollar on advertising.',
+    chart: {
+      title: 'Effective cost per booked consult — at $200/lead',
+      bars: [
+        { label: '5% conv.',  pct: 100,  val: '$4,000', color: '#ef4444' },
+        { label: '10% conv.', pct: 50,   val: '$2,000', color: '#f97316' },
+        { label: '20% conv.', pct: 25,   val: '$1,000', color: '#eab308' },
+        { label: '40% conv.', pct: 12.5, val: '$500',   color: '#22c55e', highlight: true },
+      ],
+    },
   },
 
   // ── Marketing & trust ─────────────────────────────────────────────────────
@@ -561,11 +682,11 @@ const STEPS = [
     sub: 'Think about your highest-value treatments — $1,000 and up.',
     multi: false,
     options: [
-      { text: 'Paid ads with dedicated landing pages and conversion tracking',  value: 100 },
-      { text: 'Organic social content focused on specific services',            value: 65 },
-      { text: 'Email marketing to existing and past clients',                   value: 60 },
-      { text: 'Mostly referrals and word of mouth',                             value: 32 },
-      { text: 'We don\'t actively market specific services',                   value: 10 },
+      { text: 'Paid ads with dedicated landing pages and conversion tracking', value: 100 },
+      { text: 'Organic social content focused on specific services',           value: 65 },
+      { text: 'Email marketing to existing and past clients',                  value: 60 },
+      { text: 'Mostly referrals and word of mouth',                            value: 32 },
+      { text: 'We don\'t actively market specific services',                  value: 10 },
     ],
     pillar: 'marketing', scored: true,
   },
@@ -577,10 +698,10 @@ const STEPS = [
     sub: 'Would a new patient immediately understand why to choose you over the medspa down the street?',
     multi: false,
     options: [
-      { text: 'Very clearly — our USP is specific and consistent across all channels',   value: 100 },
-      { text: 'Somewhat — we have a general direction but it\'s not fully developed',    value: 60 },
-      { text: 'Not really — we mostly list services like everyone else',                 value: 25 },
-      { text: 'We haven\'t thought about differentiation much',                         value: 10 },
+      { text: 'Very clearly — our USP is specific and consistent across all channels',  value: 100 },
+      { text: 'Somewhat — we have a direction but it\'s not fully built out',           value: 60 },
+      { text: 'Not really — we mostly list services like everyone else',                value: 25 },
+      { text: 'We haven\'t thought much about differentiation',                        value: 10 },
     ],
     pillar: 'marketing', scored: true,
   },
@@ -593,25 +714,41 @@ const STEPS = [
     sub: 'Estimate total revenue per client across all visits over their relationship with you.',
     multi: false,
     options: [
-      { text: 'Under $500',          value: 15 },
-      { text: '$500 – $1,500',       value: 40 },
-      { text: '$1,500 – $5,000',     value: 70 },
-      { text: '$5,000+',             value: 100 },
+      { text: 'Under $500',      value: 15 },
+      { text: '$500 – $1,500',   value: 40 },
+      { text: '$1,500 – $5,000', value: 70 },
+      { text: '$5,000+',         value: 100 },
     ],
     pillar: 'retention', scored: true,
+  },
+
+  // ── Insight 6: LTV revenue multiplier — BAR CHART ────────────────────────
+  {
+    type: 'insight',
+    eyebrow: 'The LTV Revenue Multiplier',
+    stat: '8×',
+    body: 'Two practices. Both with <strong>200 active clients.</strong> The difference between a $500 average lifetime value and a $4,000 LTV is the difference between a $100K revenue line and an $800K one — without a single additional new lead.',
+    chart: {
+      title: 'Projected annual revenue — same 200 active clients',
+      bars: [
+        { label: '$500 LTV',   pct: 12.5, val: '$100K', color: '#ef4444' },
+        { label: '$1,200 LTV', pct: 30,   val: '$240K', color: '#f97316' },
+        { label: '$2,500 LTV', pct: 62.5, val: '$500K', color: '#eab308' },
+        { label: '$4,000 LTV', pct: 100,  val: '$800K', color: '#22c55e', highlight: true },
+      ],
+    },
   },
 
   {
     type: 'question', id: 'loyalty',
     label: 'Retention & LTV',
     title: 'Do you have a structured membership or loyalty program?',
-    sub: null,
-    multi: false,
+    sub: null, multi: false,
     options: [
-      { text: 'Yes — and it drives significant recurring monthly revenue',  value: 100 },
-      { text: 'We have something informal or basic',                        value: 50 },
-      { text: 'We\'ve tried but it didn\'t gain real traction',            value: 18 },
-      { text: 'No structured program',                                     value: 5 },
+      { text: 'Yes — and it drives significant recurring monthly revenue', value: 100 },
+      { text: 'We have something informal or basic',                       value: 50 },
+      { text: 'We\'ve tried but it didn\'t gain real traction',           value: 18 },
+      { text: 'No structured program',                                    value: 5 },
     ],
     pillar: 'retention', scored: true,
   },
@@ -623,43 +760,55 @@ const STEPS = [
     sub: 'Clients who haven\'t visited in 90+ days.',
     multi: false,
     options: [
-      { text: 'Automated re-engagement campaigns — SMS or email with an offer',  value: 100 },
-      { text: 'Manual outreach when we think of it',                             value: 42 },
-      { text: 'We rely on them to rebook on their own',                          value: 15 },
-      { text: 'We don\'t have a re-engagement strategy',                         value: 5 },
+      { text: 'Automated re-engagement campaigns — SMS or email with an offer', value: 100 },
+      { text: 'Manual outreach when we think of it',                            value: 42 },
+      { text: 'We rely on them to rebook on their own',                         value: 15 },
+      { text: 'We don\'t have a re-engagement strategy',                        value: 5 },
     ],
     pillar: 'retention', scored: true,
   },
 
-  // ── Pain point identifier ─────────────────────────────────────────────────
+  // ── Pain point ────────────────────────────────────────────────────────────
   {
     type: 'question', id: 'bottleneck',
     label: 'Your Biggest Challenge',
     title: 'Where do you feel the most pain in your business right now?',
-    sub: 'Be honest — your answer shapes your personalised recommendations.',
+    sub: 'Be honest — your answer personalises your recommendations.',
     multi: false,
     options: [
-      { text: 'Getting more leads and visibility',                          value: 'marketing' },
-      { text: 'Converting leads into booked consultations',                 value: 'acquisition' },
-      { text: 'Getting clients to return and spend more',                   value: 'retention' },
-      { text: 'All three feel like a problem',                              value: 'all' },
+      { text: 'Getting more leads and visibility',                 value: 'marketing' },
+      { text: 'Converting leads into booked consultations',        value: 'acquisition' },
+      { text: 'Getting clients to return and spend more',          value: 'retention' },
+      { text: 'All three feel like a problem',                     value: 'all' },
     ],
     pillar: null, scored: false,
   },
 
   { type: 'email_gate' },
+
+  // ── Loading screens ───────────────────────────────────────────────────────
+  {
+    type: 'loading',
+    icon: 'bars',
+    title: 'Compiling your scores against industry standards',
+    sub: 'Benchmarking your responses across 6,000+ medspa practices…',
+    duration: 2800,
+  },
+  {
+    type: 'loading',
+    icon: 'scan',
+    title: 'Finding your gaps',
+    sub: 'Identifying the highest-impact opportunities for your practice…',
+    duration: 2400,
+  },
+
   { type: 'results' },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  STATE
 // ─────────────────────────────────────────────────────────────────────────────
-const state = {
-  step:      0,
-  answers:   {},
-  firstName: '',
-  email:     '',
-};
+const state = { step: 0, answers: {}, firstName: '', email: '' };
 
 const QUESTION_STEPS = STEPS.filter(s => s.type === 'question');
 const SCORED_STEPS   = QUESTION_STEPS.filter(s => s.scored);
@@ -671,11 +820,10 @@ function computeScores() {
   const buckets = { marketing: [], acquisition: [], retention: [] };
   SCORED_STEPS.forEach(s => {
     const ans = state.answers[s.id];
-    if (ans !== undefined && s.pillar && !isNaN(Number(ans))) {
+    if (ans !== undefined && s.pillar && !isNaN(Number(ans)))
       buckets[s.pillar].push(Number(ans));
-    }
   });
-  const avg = arr => arr.length ? Math.round(arr.reduce((a,b) => a+b, 0) / arr.length) : 50;
+  const avg = arr => arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : 50;
   const sc = {
     marketing:   avg(buckets.marketing),
     acquisition: avg(buckets.acquisition),
@@ -701,7 +849,7 @@ function overallTitle(n) {
   return 'Urgent Action Needed';
 }
 function overallDesc(n) {
-  if (n >= 75) return 'Your systems are performing well across all three pillars. The focus now is scaling what\'s already working and removing the last pockets of friction.';
+  if (n >= 75) return 'Your systems are performing well across all three pillars. The focus now is scaling what\'s working and removing the last pockets of friction.';
   if (n >= 52) return 'You have real momentum, but there are specific leaks costing you bookings and revenue every week. The fixes are targeted and fast to implement.';
   if (n >= 30) return 'There are meaningful gaps in your acquisition and retention systems that are costing you revenue daily. Addressing the right ones first will compound quickly.';
   return 'Significant revenue is slipping through the cracks daily. The good news: these are almost always systems problems — not market problems — and they\'re solvable.';
@@ -730,7 +878,6 @@ function pillarInsight(key, n) {
   };
   return copy[key][t];
 }
-
 const ctaByBottleneck = {
   marketing:   'Your trust signals and positioning need the most attention. Let\'s build a marketing foundation that converts cold traffic into booked consultations.',
   acquisition: 'Your lead-to-booking pipeline is the primary revenue leak. Let\'s install the systems that turn more of your existing leads into appointments.',
@@ -744,13 +891,12 @@ const ctaByBottleneck = {
 function updateProgress() {
   const s = STEPS[state.step];
   const wrap = document.getElementById('progressWrap');
-  if (s.type === 'welcome' || s.type === 'results') { wrap.style.display = 'none'; return; }
+  if (['welcome','results','loading'].includes(s.type)) { wrap.style.display='none'; return; }
   wrap.style.display = 'flex';
-  // Count how many question steps we've passed
   let passed = 0;
   for (let i = 0; i < state.step; i++) { if (STEPS[i].type === 'question') passed++; }
   const total = QUESTION_STEPS.length;
-  document.getElementById('progressFill').style.width = Math.min(100, Math.round((passed / total) * 100)) + '%';
+  document.getElementById('progressFill').style.width = Math.min(100, Math.round(passed/total*100))+'%';
   document.getElementById('progressLabel').textContent = `${passed} of ${total}`;
 }
 
@@ -760,16 +906,17 @@ function updateProgress() {
 function render() {
   updateProgress();
   const s = STEPS[state.step];
-  const app = document.getElementById('app');
   const map = {
     welcome:    renderWelcome,
     question:   () => renderQuestion(s),
     insight:    () => renderInsight(s),
     email_gate: renderEmailGate,
+    loading:    () => renderLoading(s),
     results:    renderResults,
   };
-  app.innerHTML = (map[s.type] || (() => ''))();
+  document.getElementById('app').innerHTML = (map[s.type]||(() => ''))();
   bindEvents();
+  afterRender();
 }
 
 function renderWelcome() {
@@ -788,76 +935,119 @@ function renderWelcome() {
         <div class="meta-item"><span class="meta-dot"></span>No fluff — just gaps</div>
       </div>
       <button class="btn btn-accent btn-full" onclick="advance()">Start My Assessment &rarr;</button>
-    </div>
-  `;
+    </div>`;
 }
 
 function renderQuestion(s) {
   const saved = state.answers[s.id];
-  const opts = s.options.map((o, i) => {
+  const opts = s.options.map(o => {
     const sel = s.multi
       ? (Array.isArray(saved) && saved.includes(o.value))
       : saved === o.value;
-    return `
-      <button class="option${s.multi ? ' multi' : ''}${sel ? ' selected' : ''}"
-              data-value="${o.value}" data-idx="${i}">
-        <span class="option-check"></span>${o.text}
-      </button>`;
+    return `<button class="option${s.multi?' multi':''}${sel?' selected':''}" data-value="${o.value}">
+      <span class="option-check"></span>${o.text}</button>`;
   }).join('');
-
   const footer = s.multi
     ? `<button class="btn btn-primary btn-full" id="continueBtn"
-               ${(!saved || saved.length === 0) ? 'disabled' : ''}
-               onclick="advance()">Continue &rarr;</button>`
+         ${(!saved||saved.length===0)?'disabled':''} onclick="advance()">Continue &rarr;</button>`
     : '';
-
-  return `
-    <div class="step">
-      ${s.label ? `<div class="step-label">${s.label}</div>` : ''}
-      <h2 class="step-title">${s.title}</h2>
-      ${s.sub ? `<p class="step-sub">${s.sub}</p>` : ''}
-      <div class="options" id="options">${opts}</div>
-      ${footer}
-    </div>
-  `;
+  return `<div class="step">
+    ${s.label?`<div class="step-label">${s.label}</div>`:''}
+    <h2 class="step-title">${s.title}</h2>
+    ${s.sub?`<p class="step-sub">${s.sub}</p>`:''}
+    <div class="options" id="options">${opts}</div>
+    ${footer}</div>`;
 }
 
 function renderInsight(s) {
-  return `
-    <div class="step">
-      <div class="insight-card">
-        <div class="insight-eyebrow">${s.eyebrow}</div>
-        <div class="insight-stat">${s.stat}</div>
-        <p class="insight-body">${s.body}</p>
-      </div>
-      <button class="btn btn-primary btn-full" onclick="advance()">Continue &rarr;</button>
+  const chartHtml = s.chart ? renderBarChart(s.chart) : '';
+  return `<div class="step">
+    <div class="insight-card">
+      <div class="insight-eyebrow">${s.eyebrow}</div>
+      <div class="insight-stat">${s.stat}</div>
+      <p class="insight-body">${s.body}</p>
+      ${chartHtml}
     </div>
-  `;
+    <button class="btn btn-primary btn-full" onclick="advance()">Continue &rarr;</button>
+  </div>`;
+}
+
+function renderBarChart(chart) {
+  const bars = chart.bars.map((b, i) => `
+    <div class="bc-col" data-pct="${b.pct}" data-color="${b.color}" data-val="${b.val}" style="animation-delay:${i*0.08}s">
+      <div class="bc-val" style="color:${b.color}">${b.val}</div>
+      <div class="bc-spacer"></div>
+      <div class="bc-fill" style="background:${b.color}"></div>
+      <div class="bc-label">${b.label}</div>
+    </div>`).join('');
+  return `<div class="bar-chart">
+    <div class="bc-title">${chart.title}</div>
+    <div class="bc-body">${bars}</div>
+  </div>`;
+}
+
+function renderLoading(s) {
+  const icon = s.icon === 'bars' ? iconBars() : iconScan();
+  return `<div class="step loading-step">
+    <div class="loading-icon">${icon}</div>
+    <h2 class="loading-title">${s.title}</h2>
+    <p class="loading-sub">${s.sub}</p>
+    <div class="loading-track">
+      <div class="loading-fill" id="loadingFill"></div>
+    </div>
+  </div>`;
+}
+
+function iconBars() {
+  return `<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="8"  y="44" width="16" height="28" rx="4" fill="#a8d5c2">
+      <animate attributeName="height" values="28;18;28" dur="1.6s" repeatCount="indefinite"/>
+      <animate attributeName="y"      values="44;54;44" dur="1.6s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="32" y="28" width="16" height="44" rx="4" fill="var(--primary)">
+      <animate attributeName="height" values="44;54;44" dur="1.6s" begin="0.25s" repeatCount="indefinite"/>
+      <animate attributeName="y"      values="28;18;28" dur="1.6s" begin="0.25s" repeatCount="indefinite"/>
+    </rect>
+    <rect x="56" y="14" width="16" height="58" rx="4" fill="var(--accent)">
+      <animate attributeName="height" values="58;46;58" dur="1.6s" begin="0.5s" repeatCount="indefinite"/>
+      <animate attributeName="y"      values="14;26;14" dur="1.6s" begin="0.5s" repeatCount="indefinite"/>
+    </rect>
+  </svg>`;
+}
+
+function iconScan() {
+  return `<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="34" cy="34" r="22" stroke="var(--primary)" stroke-width="5"/>
+    <line x1="50" y1="50" x2="70" y2="70" stroke="var(--primary)" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="34" cy="34" r="12" stroke="var(--accent)" stroke-width="2.5" stroke-dasharray="9 5">
+      <animateTransform attributeName="transform" type="rotate"
+        values="0 34 34;360 34 34" dur="1.8s" repeatCount="indefinite"/>
+    </circle>
+    <line x1="12" y1="34" x2="56" y2="34" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.6">
+      <animate attributeName="opacity" values="0.6;0.1;0.6" dur="1.2s" repeatCount="indefinite"/>
+    </line>
+  </svg>`;
 }
 
 function renderEmailGate() {
-  return `
-    <div class="step">
-      <div class="step-label">Almost there</div>
-      <h2 class="step-title">Your Growth Score is ready.</h2>
-      <p class="step-sub">
-        Enter your details and we'll show you exactly where your practice
-        ranks across all three growth pillars — plus what to fix first.
-      </p>
-      <div class="input-group">
-        <input type="text"  class="text-input" id="fnInput"
-               placeholder="First name" value="${esc(state.firstName)}"
-               oninput="state.firstName=this.value;syncBtn()" />
-        <input type="email" class="text-input" id="emInput"
-               placeholder="Work email address" value="${esc(state.email)}"
-               oninput="state.email=this.value;syncBtn()" />
-      </div>
-      <button class="btn btn-accent btn-full" id="revealBtn"
-              ${ (!state.firstName || !state.email) ? 'disabled' : '' }
-              onclick="submitLead()">Reveal My Growth Score &rarr;</button>
-      <p class="privacy-note">&#128274; No spam. Your details are never shared or sold.</p>
+  return `<div class="step">
+    <div class="step-label">Almost there</div>
+    <h2 class="step-title">Your Growth Score is ready.</h2>
+    <p class="step-sub">Enter your details and we'll show you exactly where your practice
+      ranks across all three growth pillars — plus what to fix first.</p>
+    <div class="input-group">
+      <input type="text"  class="text-input" id="fnInput"
+        placeholder="First name" value="${esc(state.firstName)}"
+        oninput="state.firstName=this.value;syncBtn()"/>
+      <input type="email" class="text-input" id="emInput"
+        placeholder="Work email address" value="${esc(state.email)}"
+        oninput="state.email=this.value;syncBtn()"/>
     </div>
-  `;
+    <button class="btn btn-accent btn-full" id="revealBtn"
+      ${(!state.firstName||!state.email)?'disabled':''} onclick="submitLead()">
+      Reveal My Growth Score &rarr;</button>
+    <p class="privacy-note">&#128274; No spam. Your details are never shared or sold.</p>
+  </div>`;
 }
 
 function renderResults() {
@@ -866,54 +1056,80 @@ function renderResults() {
   const bottleneck = state.answers['bottleneck'] || 'all';
 
   function pillarCard(label, key) {
-    const s = sc[key];
-    const t = tier(s);
-    return `
-      <div class="pillar-card">
-        <div class="pillar-header">
-          <span class="pillar-name">${label}</span>
-          <span class="pillar-badge tier-${t}">${tierLabel(s)} &middot; ${s}/100</span>
-        </div>
-        <div class="pillar-track">
-          <div class="pillar-fill bar-${t}" style="width:${s}%"></div>
-        </div>
-        <p class="pillar-insight">${pillarInsight(key, s)}</p>
-      </div>`;
+    const s = sc[key], t = tier(s);
+    return `<div class="pillar-card">
+      <div class="pillar-header">
+        <span class="pillar-name">${label}</span>
+        <span class="pillar-badge tier-${t}">${tierLabel(s)} &middot; ${s}/100</span>
+      </div>
+      <div class="pillar-track">
+        <div class="pillar-fill bar-${t}" style="width:${s}%"></div>
+      </div>
+      <p class="pillar-insight">${pillarInsight(key, s)}</p>
+    </div>`;
   }
 
-  const ctaMsg = ctaByBottleneck[bottleneck] || ctaByBottleneck['all'];
-
-  return `
-    <div class="step">
-      <div class="results-header">
-        <div class="score-ring">
-          <span class="score-number">${sc.overall}</span>
-          <span class="score-ring-label">Growth Score</span>
-        </div>
-        <h2 class="results-title">${overallTitle(sc.overall)}</h2>
-        <p class="results-desc">${overallDesc(sc.overall)}</p>
+  return `<div class="step">
+    <div class="results-header">
+      <div class="score-ring">
+        <span class="score-number">${sc.overall}</span>
+        <span class="score-ring-label">Growth Score</span>
       </div>
-
-      <div class="pillar-section-label">Your 3-Pillar Breakdown</div>
-      <div class="pillars">
-        ${pillarCard('Marketing &amp; Trust Signals',      'marketing')}
-        ${pillarCard('Lead Acquisition &amp; Conversion',  'acquisition')}
-        ${pillarCard('Retention &amp; Lifetime Value',     'retention')}
-      </div>
-
-      <div class="cta-box">
-        <h3>Ready to fix your biggest leak, ${esc(name)}?</h3>
-        <p>${ctaMsg}</p>
-        <a href="#" class="btn btn-accent">Book a Free Strategy Call &rarr;</a>
-      </div>
-
-      <p class="privacy-note">
-        Results sent to ${esc(state.email)}
-        &nbsp;&middot;&nbsp;
-        <span class="retake-link" onclick="retake()">Retake assessment</span>
-      </p>
+      <h2 class="results-title">${overallTitle(sc.overall)}</h2>
+      <p class="results-desc">${overallDesc(sc.overall)}</p>
     </div>
-  `;
+    <div class="pillar-section-label">Your 3-Pillar Breakdown</div>
+    <div class="pillars">
+      ${pillarCard('Marketing &amp; Trust Signals',     'marketing')}
+      ${pillarCard('Lead Acquisition &amp; Conversion', 'acquisition')}
+      ${pillarCard('Retention &amp; Lifetime Value',    'retention')}
+    </div>
+    <div class="cta-box">
+      <h3>Ready to fix your biggest leak, ${esc(name)}?</h3>
+      <p>${ctaByBottleneck[bottleneck]||ctaByBottleneck['all']}</p>
+      <a href="#" class="btn btn-accent">Book a Free Strategy Call &rarr;</a>
+    </div>
+    <p class="privacy-note">
+      Results sent to ${esc(state.email)}
+      &nbsp;&middot;&nbsp;
+      <span class="retake-link" onclick="retake()">Retake assessment</span>
+    </p>
+  </div>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  AFTER RENDER — chart animations + loading progress
+// ─────────────────────────────────────────────────────────────────────────────
+function afterRender() {
+  const s = STEPS[state.step];
+
+  if (s.type === 'insight' && s.chart) {
+    // Animate bars in staggered sequence
+    const MAX_H = 88; // px — available bar height
+    setTimeout(() => {
+      document.querySelectorAll('.bc-col').forEach((col, i) => {
+        setTimeout(() => {
+          const pct = parseFloat(col.dataset.pct);
+          const h   = Math.round(MAX_H * pct / 100);
+          col.querySelector('.bc-fill').style.height = h + 'px';
+          col.querySelector('.bc-val').style.opacity = '1';
+        }, i * 100);
+      });
+    }, 120);
+  }
+
+  if (s.type === 'loading') {
+    const fill = document.getElementById('loadingFill');
+    if (!fill) return;
+    const dur = s.duration || 2500;
+    // Start fill animation
+    requestAnimationFrame(() => {
+      fill.style.transition = `width ${dur}ms linear`;
+      fill.style.width = '100%';
+    });
+    // Auto-advance when done
+    setTimeout(advance, dur + 150);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -929,14 +1145,13 @@ function bindEvents() {
       if (s.multi) {
         let cur = state.answers[s.id];
         if (!Array.isArray(cur)) cur = [];
-        cur = cur.includes(val) ? cur.filter(v => v !== val) : [...cur, val];
+        cur = cur.includes(val) ? cur.filter(v=>v!==val) : [...cur,val];
         state.answers[s.id] = cur;
         document.querySelectorAll('.option').forEach(o =>
           o.classList.toggle('selected', cur.includes(o.dataset.value)));
         const btn = document.getElementById('continueBtn');
         if (btn) btn.disabled = cur.length === 0;
       } else {
-        // Numeric or string value — preserve type
         const parsed = isNaN(Number(val)) ? val : Number(val);
         state.answers[s.id] = parsed;
         document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
@@ -961,8 +1176,8 @@ function syncBtn() {
 }
 
 function submitLead() {
-  // ── Integration point ───────────────────────────────────────────────────
-  // POST to your CRM, Zapier webhook, Mailchimp, etc. here:
+  // ── Integration point ──────────────────────────────────────────────────
+  // POST to your CRM, Zapier webhook, Mailchimp, etc.:
   //
   // fetch('https://hooks.zapier.com/hooks/catch/YOUR_HOOK', {
   //   method: 'POST',
@@ -974,7 +1189,7 @@ function submitLead() {
   //     scores:    computeScores(),
   //   }),
   // });
-  // ────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────
   advance();
 }
 
@@ -989,14 +1204,10 @@ function retake() {
 
 function esc(str) {
   return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  INIT
 // ─────────────────────────────────────────────────────────────────────────────
 render();
 </script>
