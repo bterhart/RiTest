@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MedSpa Growth Score — Find Your #1 Revenue Leak</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:              #f8f6f3;
+      --card:            #ffffff;
+      --primary:         #2c4a3e;
+      --primary-light:   #3d6b5c;
+      --accent:          #c9a96e;
+      --accent-light:    #f0e4c8;
+      --text:            #1a1a1a;
+      --muted:           #6b7280;
+      --border:          #e5e2dd;
+      --insight-bg:      #eef7f3;
+      --insight-border:  #a8d5c2;
+    }
+
+    body {
+      font-family: Georgia, 'Times New Roman', serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── Progress bar ──────────────────────────────────────────────── */
+    #progressWrap {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: none;
+      align-items: center;
+      gap: 16px;
+    }
+    .progress-track {
+      flex: 1;
+      height: 6px;
+      background: var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--primary-light));
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
+    .progress-label {
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    /* ── Layout ────────────────────────────────────────────────────── */
+    #container {
+      width: 100%;
+      max-width: 640px;
+      padding: 100px 24px 60px;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── Step animation ────────────────────────────────────────────── */
+    .step {
+      width: 100%;
+      animation: fadeUp 0.35s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Typography ────────────────────────────────────────────────── */
+    .step-label {
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+    .step-title {
+      font-size: clamp(22px, 4vw, 30px);
+      font-weight: 700;
+      line-height: 1.3;
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+    .step-sub {
+      font-family: Arial, sans-serif;
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.65;
+      margin-bottom: 30px;
+    }
+
+    /* ── Options ───────────────────────────────────────────────────── */
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+      margin-bottom: 26px;
+    }
+    .option {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 15px 20px;
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: border-color 0.18s, background 0.18s;
+      font-family: Arial, sans-serif;
+      font-size: 15px;
+      color: var(--text);
+      text-align: left;
+    }
+    .option:hover            { border-color: var(--primary-light); background: #f0f7f4; }
+    .option.selected         { border-color: var(--primary); background: #eef7f3; color: var(--primary); font-weight: 600; }
+    .option-check {
+      flex-shrink: 0;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.18s;
+    }
+    .option.multi .option-check { border-radius: 5px; }
+    .option.selected .option-check {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+    .option.selected .option-check::after {
+      content: '';
+      display: block;
+      width: 7px; height: 4px;
+      border-left: 2px solid #fff;
+      border-bottom: 2px solid #fff;
+      transform: rotate(-45deg) translate(1px, -1px);
+    }
+
+    /* ── Insight card ──────────────────────────────────────────────── */
+    .insight-card {
+      background: var(--insight-bg);
+      border: 1px solid var(--insight-border);
+      border-left: 4px solid var(--primary);
+      border-radius: 14px;
+      padding: 26px 24px;
+      margin-bottom: 32px;
+    }
+    .insight-eyebrow {
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--primary-light);
+      margin-bottom: 8px;
+    }
+    .insight-stat {
+      font-size: clamp(32px, 6vw, 48px);
+      font-weight: 700;
+      color: var(--primary);
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+    .insight-body {
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.7;
+      color: #374151;
+    }
+
+    /* ── Buttons ───────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px 32px;
+      border-radius: 10px;
+      font-family: Arial, sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover {
+      background: var(--primary-light);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(44,74,62,0.28);
+    }
+    .btn-accent { background: var(--accent); color: #fff; }
+    .btn-accent:hover {
+      background: #b8934a;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(201,169,110,0.38);
+    }
+    .btn-full { width: 100%; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+    /* ── Welcome ───────────────────────────────────────────────────── */
+    .welcome-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 16px;
+      background: var(--accent-light);
+      border-radius: 999px;
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: #7a5a20;
+      margin-bottom: 26px;
+    }
+    .badge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    .welcome-title {
+      font-size: clamp(28px, 5vw, 42px);
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--primary);
+      margin-bottom: 18px;
+    }
+    .welcome-body {
+      font-family: Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.75;
+      color: #374151;
+      margin-bottom: 30px;
+    }
+    .welcome-meta {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
+    }
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .meta-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+    /* ── Email gate ────────────────────────────────────────────────── */
+    .text-input {
+      width: 100%;
+      padding: 16px 20px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-family: Arial, sans-serif;
+      font-size: 16px;
+      color: var(--text);
+      background: var(--card);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .text-input:focus { border-color: var(--primary); }
+    .input-group { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+    .privacy-note {
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    /* ── Results ───────────────────────────────────────────────────── */
+    .results-header { text-align: center; margin-bottom: 36px; }
+    .score-ring {
+      width: 148px; height: 148px;
+      border-radius: 50%;
+      background: var(--primary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      box-shadow: 0 6px 24px rgba(44,74,62,0.25);
+    }
+    .score-number { font-size: 52px; font-weight: 700; color: #fff; line-height: 1; }
+    .score-ring-label { font-family: Arial, sans-serif; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.75); margin-top: 4px; }
+    .results-title { font-size: 26px; font-weight: 700; color: var(--primary); margin-bottom: 8px; }
+    .results-desc { font-family: Arial, sans-serif; font-size: 15px; color: var(--muted); line-height: 1.65; max-width: 460px; margin: 0 auto; }
+
+    .pillar-section-label {
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 28px 0 14px;
+    }
+    .pillars { display: flex; flex-direction: column; gap: 14px; margin-bottom: 32px; }
+    .pillar-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px 24px;
+    }
+    .pillar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .pillar-name { font-size: 15px; font-weight: 700; color: var(--primary); }
+    .pillar-badge {
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 999px;
+    }
+    .pillar-track { height: 8px; background: var(--border); border-radius: 999px; overflow: hidden; margin-bottom: 14px; }
+    .pillar-fill { height: 100%; border-radius: 999px; transition: width 1s ease 0.2s; }
+    .pillar-insight { font-family: Arial, sans-serif; font-size: 13px; color: #374151; line-height: 1.65; }
+
+    /* Score tier colours */
+    .tier-strong     { background: #dcfce7; color: #166534; }
+    .bar-strong      { background: #22c55e; }
+    .tier-growing    { background: #fef9c3; color: #854d0e; }
+    .bar-growing     { background: #eab308; }
+    .tier-opportunity{ background: #ffedd5; color: #9a3412; }
+    .bar-opportunity { background: #f97316; }
+    .tier-critical   { background: #fee2e2; color: #991b1b; }
+    .bar-critical    { background: #ef4444; }
+
+    /* ── CTA box ───────────────────────────────────────────────────── */
+    .cta-box {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      border-radius: 16px;
+      padding: 32px 28px;
+      text-align: center;
+      color: #fff;
+      margin-bottom: 28px;
+    }
+    .cta-box h3 { font-size: 22px; font-weight: 700; margin-bottom: 10px; }
+    .cta-box p  { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.65; opacity: 0.88; margin-bottom: 24px; }
+
+    .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+
+    .retake-link {
+      display: block;
+      text-align: center;
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      text-decoration: underline;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 480px) {
+      #container { padding: 80px 16px 40px; }
+      .option { padding: 13px 15px; font-size: 14px; }
+      .pillar-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Progress bar -->
+<div id="progressWrap">
+  <div class="progress-track">
+    <div class="progress-fill" id="progressFill" style="width:0%"></div>
+  </div>
+  <span class="progress-label" id="progressLabel"></span>
+</div>
+
+<div id="container">
+  <div id="app"></div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+//  STEPS
+//  type: 'welcome' | 'question' | 'insight' | 'email_gate' | 'results'
+//  pillar: 'marketing' | 'acquisition' | 'retention' | null
+//  scored: true means the option's numeric value feeds into the pillar score
+// ─────────────────────────────────────────────────────────────────────────────
+const STEPS = [
+  { type: 'welcome' },
+
+  // ── Context questions (not scored) ───────────────────────────────────────
+  {
+    type: 'question', id: 'services',
+    label: 'Your Practice',
+    title: 'Which services do you currently offer?',
+    sub: 'Select all that apply.',
+    multi: true,
+    options: [
+      { text: 'Injectables (Botox, fillers, Sculptra)',         value: 'injectables' },
+      { text: 'Body contouring / fat reduction',                value: 'body' },
+      { text: 'Laser, skin resurfacing & light therapy',        value: 'laser' },
+      { text: 'Medical weight loss (GLP-1, Semaglutide)',       value: 'weightloss' },
+      { text: 'IV therapy / wellness infusions',                value: 'iv' },
+      { text: 'Hormone therapy / longevity medicine',           value: 'hormone' },
+    ],
+    pillar: null, scored: false,
+  },
+
+  {
+    type: 'question', id: 'monthly_leads',
+    label: 'Lead Volume',
+    title: 'How many new leads come in each month?',
+    sub: 'Include form fills, DMs, calls, and walk-ins.',
+    multi: false,
+    options: [
+      { text: 'Fewer than 25',   value: 1 },
+      { text: '25 – 75',         value: 2 },
+      { text: '75 – 150',        value: 3 },
+      { text: 'More than 150',   value: 4 },
+    ],
+    pillar: null, scored: false,
+  },
+
+  // ── Insight 1 ─────────────────────────────────────────────────────────────
+  {
+    type: 'insight',
+    eyebrow: 'Industry Benchmark',
+    stat: '8–12%',
+    body: 'Medspas typically convert only 8% to 12% of new leads into booked consultations — meaning <strong>roughly 9 out of 10 potential patients never make it onto your calendar.</strong> The gap is almost always a systems problem, not a service problem.',
+  },
+
+  // ── Lead acquisition ──────────────────────────────────────────────────────
+  {
+    type: 'question', id: 'lead_to_consult',
+    label: 'Lead Conversion',
+    title: 'What percentage of your leads turn into booked consultations?',
+    sub: null,
+    multi: false,
+    options: [
+      { text: 'Less than 10%',    value: 10 },
+      { text: '10% – 25%',        value: 35 },
+      { text: '25% – 50%',        value: 65 },
+      { text: 'More than 50%',    value: 100 },
+    ],
+    pillar: 'acquisition', scored: true,
+  },
+
+  {
+    type: 'question', id: 'response_time',
+    label: 'Speed-to-Lead',
+    title: 'How quickly does your team follow up with a new lead?',
+    sub: 'Think about your average across all channels — web, social, phone.',
+    multi: false,
+    options: [
+      { text: 'Within 5 minutes',      value: 100 },
+      { text: 'Within 30 minutes',     value: 60 },
+      { text: 'Within a few hours',    value: 25 },
+      { text: 'Same day or longer',    value: 5 },
+    ],
+    pillar: 'acquisition', scored: true,
+  },
+
+  // ── Insight 2 ─────────────────────────────────────────────────────────────
+  {
+    type: 'insight',
+    eyebrow: 'Response Speed Impact',
+    stat: '21×',
+    body: 'Leads contacted within 5 minutes are up to <strong>21× more likely to qualify</strong> than leads contacted after 30 minutes. In a competitive market, whoever responds first almost always wins the booking.',
+  },
+
+  {
+    type: 'question', id: 'followup',
+    label: 'Follow-Up & Nurture',
+    title: 'What happens when a lead inquires but doesn\'t book?',
+    sub: 'Describe your typical follow-up process.',
+    multi: false,
+    options: [
+      { text: 'Automated multi-step sequence — SMS + email over several days',  value: 100 },
+      { text: 'A few manual follow-ups spread over 1–2 days',                   value: 50 },
+      { text: 'One attempt, then we move on',                                   value: 20 },
+      { text: 'No formal follow-up process',                                    value: 5 },
+    ],
+    pillar: 'acquisition', scored: true,
+  },
+
+  {
+    type: 'question', id: 'noshow_rate',
+    label: 'Appointment Integrity',
+    title: 'What\'s your current no-show and last-minute cancellation rate?',
+    sub: null,
+    multi: false,
+    options: [
+      { text: 'Under 5%',    value: 100 },
+      { text: '5% – 15%',   value: 75 },
+      { text: '15% – 25%',  value: 40 },
+      { text: 'Over 25%',   value: 10 },
+    ],
+    pillar: 'acquisition', scored: true,
+  },
+
+  // ── Insight 3 ─────────────────────────────────────────────────────────────
+  {
+    type: 'insight',
+    eyebrow: 'The Cost of No-Shows',
+    stat: '$200',
+    body: 'A single missed appointment costs around <strong>$200 on average</strong> in lost revenue and overhead. Automated reminder systems can cut no-show rates from 21% down to 7% — a difference that adds up to tens of thousands per year.',
+  },
+
+  {
+    type: 'question', id: 'reminders',
+    label: 'Reminder Systems',
+    title: 'Do you have an automated appointment reminder and confirmation system?',
+    sub: null,
+    multi: false,
+    options: [
+      { text: 'Yes — automated SMS + email with 2-way confirmation',    value: 100 },
+      { text: 'Mostly manual — staff texts or calls individually',      value: 60 },
+      { text: 'We send reminders occasionally, not consistently',       value: 28 },
+      { text: 'No reminder system in place',                            value: 5 },
+    ],
+    pillar: 'acquisition', scored: true,
+  },
+
+  // ── Marketing & trust ─────────────────────────────────────────────────────
+  {
+    type: 'question', id: 'online_presence',
+    label: 'Marketing & Trust',
+    title: 'How would you describe your online presence and trust signals?',
+    sub: 'Reviews, before/afters, social content, website quality.',
+    multi: false,
+    options: [
+      { text: 'Strong — 100+ reviews, consistent content, clear differentiation', value: 100 },
+      { text: 'Decent — some reviews and posts, but inconsistent',                value: 65 },
+      { text: 'Weak — minimal reviews, sparse content',                           value: 32 },
+      { text: 'We rely almost entirely on word-of-mouth',                         value: 15 },
+    ],
+    pillar: 'marketing', scored: true,
+  },
+
+  {
+    type: 'question', id: 'high_ticket_marketing',
+    label: 'Marketing & Trust',
+    title: 'How do you currently market your high-ticket services?',
+    sub: 'Think about your highest-value treatments — $1,000 and up.',
+    multi: false,
+    options: [
+      { text: 'Paid ads with dedicated landing pages and conversion tracking',  value: 100 },
+      { text: 'Organic social content focused on specific services',            value: 65 },
+      { text: 'Email marketing to existing and past clients',                   value: 60 },
+      { text: 'Mostly referrals and word of mouth',                             value: 32 },
+      { text: 'We don\'t actively market specific services',                   value: 10 },
+    ],
+    pillar: 'marketing', scored: true,
+  },
+
+  {
+    type: 'question', id: 'positioning',
+    label: 'Marketing & Trust',
+    title: 'How clearly do you differentiate your practice from competitors?',
+    sub: 'Would a new patient immediately understand why to choose you over the medspa down the street?',
+    multi: false,
+    options: [
+      { text: 'Very clearly — our USP is specific and consistent across all channels',   value: 100 },
+      { text: 'Somewhat — we have a general direction but it\'s not fully developed',    value: 60 },
+      { text: 'Not really — we mostly list services like everyone else',                 value: 25 },
+      { text: 'We haven\'t thought about differentiation much',                         value: 10 },
+    ],
+    pillar: 'marketing', scored: true,
+  },
+
+  // ── Retention & LTV ───────────────────────────────────────────────────────
+  {
+    type: 'question', id: 'client_ltv',
+    label: 'Client Lifetime Value',
+    title: 'What\'s the average total lifetime spend per client?',
+    sub: 'Estimate total revenue per client across all visits over their relationship with you.',
+    multi: false,
+    options: [
+      { text: 'Under $500',          value: 15 },
+      { text: '$500 – $1,500',       value: 40 },
+      { text: '$1,500 – $5,000',     value: 70 },
+      { text: '$5,000+',             value: 100 },
+    ],
+    pillar: 'retention', scored: true,
+  },
+
+  {
+    type: 'question', id: 'loyalty',
+    label: 'Retention & LTV',
+    title: 'Do you have a structured membership or loyalty program?',
+    sub: null,
+    multi: false,
+    options: [
+      { text: 'Yes — and it drives significant recurring monthly revenue',  value: 100 },
+      { text: 'We have something informal or basic',                        value: 50 },
+      { text: 'We\'ve tried but it didn\'t gain real traction',            value: 18 },
+      { text: 'No structured program',                                     value: 5 },
+    ],
+    pillar: 'retention', scored: true,
+  },
+
+  {
+    type: 'question', id: 'reactivation',
+    label: 'Retention & LTV',
+    title: 'How do you bring lapsed clients back?',
+    sub: 'Clients who haven\'t visited in 90+ days.',
+    multi: false,
+    options: [
+      { text: 'Automated re-engagement campaigns — SMS or email with an offer',  value: 100 },
+      { text: 'Manual outreach when we think of it',                             value: 42 },
+      { text: 'We rely on them to rebook on their own',                          value: 15 },
+      { text: 'We don\'t have a re-engagement strategy',                         value: 5 },
+    ],
+    pillar: 'retention', scored: true,
+  },
+
+  // ── Pain point identifier ─────────────────────────────────────────────────
+  {
+    type: 'question', id: 'bottleneck',
+    label: 'Your Biggest Challenge',
+    title: 'Where do you feel the most pain in your business right now?',
+    sub: 'Be honest — your answer shapes your personalised recommendations.',
+    multi: false,
+    options: [
+      { text: 'Getting more leads and visibility',                          value: 'marketing' },
+      { text: 'Converting leads into booked consultations',                 value: 'acquisition' },
+      { text: 'Getting clients to return and spend more',                   value: 'retention' },
+      { text: 'All three feel like a problem',                              value: 'all' },
+    ],
+    pillar: null, scored: false,
+  },
+
+  { type: 'email_gate' },
+  { type: 'results' },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────────────────────────────────────
+const state = {
+  step:      0,
+  answers:   {},
+  firstName: '',
+  email:     '',
+};
+
+const QUESTION_STEPS = STEPS.filter(s => s.type === 'question');
+const SCORED_STEPS   = QUESTION_STEPS.filter(s => s.scored);
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  SCORING
+// ─────────────────────────────────────────────────────────────────────────────
+function computeScores() {
+  const buckets = { marketing: [], acquisition: [], retention: [] };
+  SCORED_STEPS.forEach(s => {
+    const ans = state.answers[s.id];
+    if (ans !== undefined && s.pillar && !isNaN(Number(ans))) {
+      buckets[s.pillar].push(Number(ans));
+    }
+  });
+  const avg = arr => arr.length ? Math.round(arr.reduce((a,b) => a+b, 0) / arr.length) : 50;
+  const sc = {
+    marketing:   avg(buckets.marketing),
+    acquisition: avg(buckets.acquisition),
+    retention:   avg(buckets.retention),
+  };
+  sc.overall = Math.round((sc.marketing + sc.acquisition + sc.retention) / 3);
+  return sc;
+}
+
+function tier(n) {
+  if (n >= 75) return 'strong';
+  if (n >= 52) return 'growing';
+  if (n >= 30) return 'opportunity';
+  return 'critical';
+}
+function tierLabel(n) {
+  return { strong:'Strong', growing:'Growing', opportunity:'Opportunity', critical:'Critical Gap' }[tier(n)];
+}
+function overallTitle(n) {
+  if (n >= 75) return 'Strong Foundation';
+  if (n >= 52) return 'Growing Practice';
+  if (n >= 30) return 'Significant Opportunity';
+  return 'Urgent Action Needed';
+}
+function overallDesc(n) {
+  if (n >= 75) return 'Your systems are performing well across all three pillars. The focus now is scaling what\'s already working and removing the last pockets of friction.';
+  if (n >= 52) return 'You have real momentum, but there are specific leaks costing you bookings and revenue every week. The fixes are targeted and fast to implement.';
+  if (n >= 30) return 'There are meaningful gaps in your acquisition and retention systems that are costing you revenue daily. Addressing the right ones first will compound quickly.';
+  return 'Significant revenue is slipping through the cracks daily. The good news: these are almost always systems problems — not market problems — and they\'re solvable.';
+}
+function pillarInsight(key, n) {
+  const t = tier(n);
+  const copy = {
+    marketing: {
+      strong:      'Your positioning and trust signals are working. Focus on amplifying through paid acquisition and expanding referral loops to compound growth.',
+      growing:     'You have a presence but inconsistency is capping your reach. A structured weekly content and review cadence will compound faster than you expect.',
+      opportunity: 'Weak trust signals are killing conversions before a lead ever contacts you. New patients research online first — if your credibility is thin, they choose a competitor.',
+      critical:    'Your marketing foundation needs immediate attention. Without clear positioning and visible social proof, every other growth system works harder than it should.',
+    },
+    acquisition: {
+      strong:      'Your lead-to-booking engine is solid. Now focus on optimising the consult-to-treatment close rate and increasing average ticket per visit.',
+      growing:     'Your response and follow-up systems have exploitable gaps. Even shaving 10 minutes off your average response time can meaningfully lift booked consultations.',
+      opportunity: 'You\'re losing the majority of leads before they ever book. Speed-to-lead, automated nurture, and reminder systems could double your booked consultations without adding a single new lead.',
+      critical:    'At current conversion rates, you may be paying for leads that almost never become revenue. Fixing your acquisition pipeline is the highest-ROI move available to you right now.',
+    },
+    retention: {
+      strong:      'Your clients are staying and spending — that\'s your moat. Referral programs and high-ticket packaging can amplify lifetime value even further.',
+      growing:     'You have returning clients but you\'re leaving money on the table with informal systems. A structured membership could significantly lift monthly recurring revenue.',
+      opportunity: 'Most of your revenue is probably coming from one-time visits. Re-engagement campaigns and a membership program could 2–3× lifetime value without adding new leads.',
+      critical:    'Without a retention system, you\'re filling a leaky bucket. Every new client is largely one-and-done. Fixing this multiplies the value of every marketing dollar you spend.',
+    },
+  };
+  return copy[key][t];
+}
+
+const ctaByBottleneck = {
+  marketing:   'Your trust signals and positioning need the most attention. Let\'s build a marketing foundation that converts cold traffic into booked consultations.',
+  acquisition: 'Your lead-to-booking pipeline is the primary revenue leak. Let\'s install the systems that turn more of your existing leads into appointments.',
+  retention:   'Your best growth lever is the clients you already have. Let\'s build retention and reactivation systems that compound over time.',
+  all:         'You\'re leaving revenue on the table across all three pillars. The right strategy prioritises the highest-ROI fix first — let\'s map that out together.',
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PROGRESS
+// ─────────────────────────────────────────────────────────────────────────────
+function updateProgress() {
+  const s = STEPS[state.step];
+  const wrap = document.getElementById('progressWrap');
+  if (s.type === 'welcome' || s.type === 'results') { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'flex';
+  // Count how many question steps we've passed
+  let passed = 0;
+  for (let i = 0; i < state.step; i++) { if (STEPS[i].type === 'question') passed++; }
+  const total = QUESTION_STEPS.length;
+  document.getElementById('progressFill').style.width = Math.min(100, Math.round((passed / total) * 100)) + '%';
+  document.getElementById('progressLabel').textContent = `${passed} of ${total}`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  RENDER
+// ─────────────────────────────────────────────────────────────────────────────
+function render() {
+  updateProgress();
+  const s = STEPS[state.step];
+  const app = document.getElementById('app');
+  const map = {
+    welcome:    renderWelcome,
+    question:   () => renderQuestion(s),
+    insight:    () => renderInsight(s),
+    email_gate: renderEmailGate,
+    results:    renderResults,
+  };
+  app.innerHTML = (map[s.type] || (() => ''))();
+  bindEvents();
+}
+
+function renderWelcome() {
+  return `
+    <div class="step">
+      <div class="welcome-badge"><span class="badge-dot"></span> Free 3-Minute Assessment</div>
+      <h1 class="welcome-title">Where is your MedSpa leaving money on the table?</h1>
+      <p class="welcome-body">
+        Most medspas lose 80–90% of their leads before a consultation is ever booked —
+        not because of bad services, but because of broken systems.
+        This assessment pinpoints exactly where your revenue is leaking and what to fix first.
+      </p>
+      <div class="welcome-meta">
+        <div class="meta-item"><span class="meta-dot"></span>3 minutes to complete</div>
+        <div class="meta-item"><span class="meta-dot"></span>Personalised Growth Score</div>
+        <div class="meta-item"><span class="meta-dot"></span>No fluff — just gaps</div>
+      </div>
+      <button class="btn btn-accent btn-full" onclick="advance()">Start My Assessment &rarr;</button>
+    </div>
+  `;
+}
+
+function renderQuestion(s) {
+  const saved = state.answers[s.id];
+  const opts = s.options.map((o, i) => {
+    const sel = s.multi
+      ? (Array.isArray(saved) && saved.includes(o.value))
+      : saved === o.value;
+    return `
+      <button class="option${s.multi ? ' multi' : ''}${sel ? ' selected' : ''}"
+              data-value="${o.value}" data-idx="${i}">
+        <span class="option-check"></span>${o.text}
+      </button>`;
+  }).join('');
+
+  const footer = s.multi
+    ? `<button class="btn btn-primary btn-full" id="continueBtn"
+               ${(!saved || saved.length === 0) ? 'disabled' : ''}
+               onclick="advance()">Continue &rarr;</button>`
+    : '';
+
+  return `
+    <div class="step">
+      ${s.label ? `<div class="step-label">${s.label}</div>` : ''}
+      <h2 class="step-title">${s.title}</h2>
+      ${s.sub ? `<p class="step-sub">${s.sub}</p>` : ''}
+      <div class="options" id="options">${opts}</div>
+      ${footer}
+    </div>
+  `;
+}
+
+function renderInsight(s) {
+  return `
+    <div class="step">
+      <div class="insight-card">
+        <div class="insight-eyebrow">${s.eyebrow}</div>
+        <div class="insight-stat">${s.stat}</div>
+        <p class="insight-body">${s.body}</p>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="advance()">Continue &rarr;</button>
+    </div>
+  `;
+}
+
+function renderEmailGate() {
+  return `
+    <div class="step">
+      <div class="step-label">Almost there</div>
+      <h2 class="step-title">Your Growth Score is ready.</h2>
+      <p class="step-sub">
+        Enter your details and we'll show you exactly where your practice
+        ranks across all three growth pillars — plus what to fix first.
+      </p>
+      <div class="input-group">
+        <input type="text"  class="text-input" id="fnInput"
+               placeholder="First name" value="${esc(state.firstName)}"
+               oninput="state.firstName=this.value;syncBtn()" />
+        <input type="email" class="text-input" id="emInput"
+               placeholder="Work email address" value="${esc(state.email)}"
+               oninput="state.email=this.value;syncBtn()" />
+      </div>
+      <button class="btn btn-accent btn-full" id="revealBtn"
+              ${ (!state.firstName || !state.email) ? 'disabled' : '' }
+              onclick="submitLead()">Reveal My Growth Score &rarr;</button>
+      <p class="privacy-note">&#128274; No spam. Your details are never shared or sold.</p>
+    </div>
+  `;
+}
+
+function renderResults() {
+  const sc = computeScores();
+  const name = state.firstName || 'there';
+  const bottleneck = state.answers['bottleneck'] || 'all';
+
+  function pillarCard(label, key) {
+    const s = sc[key];
+    const t = tier(s);
+    return `
+      <div class="pillar-card">
+        <div class="pillar-header">
+          <span class="pillar-name">${label}</span>
+          <span class="pillar-badge tier-${t}">${tierLabel(s)} &middot; ${s}/100</span>
+        </div>
+        <div class="pillar-track">
+          <div class="pillar-fill bar-${t}" style="width:${s}%"></div>
+        </div>
+        <p class="pillar-insight">${pillarInsight(key, s)}</p>
+      </div>`;
+  }
+
+  const ctaMsg = ctaByBottleneck[bottleneck] || ctaByBottleneck['all'];
+
+  return `
+    <div class="step">
+      <div class="results-header">
+        <div class="score-ring">
+          <span class="score-number">${sc.overall}</span>
+          <span class="score-ring-label">Growth Score</span>
+        </div>
+        <h2 class="results-title">${overallTitle(sc.overall)}</h2>
+        <p class="results-desc">${overallDesc(sc.overall)}</p>
+      </div>
+
+      <div class="pillar-section-label">Your 3-Pillar Breakdown</div>
+      <div class="pillars">
+        ${pillarCard('Marketing &amp; Trust Signals',      'marketing')}
+        ${pillarCard('Lead Acquisition &amp; Conversion',  'acquisition')}
+        ${pillarCard('Retention &amp; Lifetime Value',     'retention')}
+      </div>
+
+      <div class="cta-box">
+        <h3>Ready to fix your biggest leak, ${esc(name)}?</h3>
+        <p>${ctaMsg}</p>
+        <a href="#" class="btn btn-accent">Book a Free Strategy Call &rarr;</a>
+      </div>
+
+      <p class="privacy-note">
+        Results sent to ${esc(state.email)}
+        &nbsp;&middot;&nbsp;
+        <span class="retake-link" onclick="retake()">Retake assessment</span>
+      </p>
+    </div>
+  `;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  EVENTS
+// ─────────────────────────────────────────────────────────────────────────────
+function bindEvents() {
+  const s = STEPS[state.step];
+  if (s.type !== 'question') return;
+
+  document.querySelectorAll('.option').forEach(el => {
+    el.addEventListener('click', () => {
+      const val = el.dataset.value;
+      if (s.multi) {
+        let cur = state.answers[s.id];
+        if (!Array.isArray(cur)) cur = [];
+        cur = cur.includes(val) ? cur.filter(v => v !== val) : [...cur, val];
+        state.answers[s.id] = cur;
+        document.querySelectorAll('.option').forEach(o =>
+          o.classList.toggle('selected', cur.includes(o.dataset.value)));
+        const btn = document.getElementById('continueBtn');
+        if (btn) btn.disabled = cur.length === 0;
+      } else {
+        // Numeric or string value — preserve type
+        const parsed = isNaN(Number(val)) ? val : Number(val);
+        state.answers[s.id] = parsed;
+        document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+        el.classList.add('selected');
+        setTimeout(advance, 290);
+      }
+    });
+  });
+}
+
+function advance() {
+  if (state.step < STEPS.length - 1) {
+    state.step++;
+    render();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function syncBtn() {
+  const btn = document.getElementById('revealBtn');
+  if (btn) btn.disabled = !state.firstName.trim() || !state.email.includes('@');
+}
+
+function submitLead() {
+  // ── Integration point ───────────────────────────────────────────────────
+  // POST to your CRM, Zapier webhook, Mailchimp, etc. here:
+  //
+  // fetch('https://hooks.zapier.com/hooks/catch/YOUR_HOOK', {
+  //   method: 'POST',
+  //   headers: { 'Content-Type': 'application/json' },
+  //   body: JSON.stringify({
+  //     firstName: state.firstName,
+  //     email:     state.email,
+  //     answers:   state.answers,
+  //     scores:    computeScores(),
+  //   }),
+  // });
+  // ────────────────────────────────────────────────────────────────────────
+  advance();
+}
+
+function retake() {
+  state.step = 0;
+  state.answers = {};
+  state.firstName = '';
+  state.email = '';
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function esc(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
