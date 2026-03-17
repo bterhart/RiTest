@@ -857,10 +857,10 @@ const STEPS = [
   {
     type: 'insight',
     eyebrow: 'The Compound Effect',
-    stat: '3.9×',
-    body: 'A medspa making a <strong>12% improvement across all 4 levers</strong> — acquisition volume, lead conversion, high-ticket close rate, and client LTV — sees nearly <strong>4× its current revenue within 3 years.</strong> Small wins across multiple levers don\'t add. They multiply.',
+    stat: '400%',
+    body: 'The chart below is built from <strong>your answers.</strong> Each lever — lead volume, conversion rate, average treatment value, and retention — multiplies against the others. Improve each one by 50% over 12 months and your revenue doesn\'t grow by 50%. It grows by <strong>400%.</strong> That\'s not arithmetic. That\'s compounding.',
     lineChart: {
-      title: 'Revenue multiple vs. today — 3-year sustained improvement across 4 levers',
+      title: 'Your projected monthly revenue — 12-month improvement scenarios',
     },
   },
 
@@ -1132,53 +1132,86 @@ function updateDynChart(cpl) {
 }
 
 function renderLineChart(chart) {
-  // Data: (1+x)^4 compounded over 3 years, where x = improvement per lever per year
-  // 3%:  (1.03^4)^y  → Y0=1, Y1=1.126, Y2=1.267, Y3=1.426
-  // 6%:  (1.06^4)^y  → Y0=1, Y1=1.262, Y2=1.594, Y3=2.012
-  // 12%: (1.12^4)^y  → Y0=1, Y1=1.574, Y2=2.477, Y3=3.897
-  // Chart area: x 52–476, y 20–200 (plotH=180, yMin=1, yMax=4)
-  const ml=52, pw=424, yTop=20, ph=180, yBot=200;
-  function px(yr)  { return ml + (yr/3)*pw; }
-  function py(val) { return yBot - ((val-1)/3)*ph; }
+  // ── Pull user answers and estimate baseline monthly revenue ─────────────────
+  // Lead volume bands
+  const leadsMap = { 1:15, 2:50, 3:112, 4:200 };
+  // Lead-to-consult conversion rate (the score value maps back to a rate midpoint)
+  const convMap  = { 10:0.07, 35:0.17, 65:0.37, 100:0.55 };
+  // LTV bands → estimated per-visit avg treatment value (≈ LTV × 0.35, assuming ~3 avg visits)
+  const txMap    = { 15:120, 40:350, 70:875, 100:1925 };
 
-  const series = [
-    { data:[1,1,1,1],                   color:'#d1d5db', dash:'6 4', label:'Baseline',     val:'1.0×', dashed:true  },
-    { data:[1,1.126,1.267,1.426],        color:'#eab308', dash:'',   label:'+3% per lever', val:'1.4×', dashed:false },
-    { data:[1,1.262,1.594,2.012],        color:'#f97316', dash:'',   label:'+6% per lever', val:'2.0×', dashed:false },
-    { data:[1,1.574,2.477,3.897],        color:'#22c55e', dash:'',   label:'+12% per lever',val:'3.9×', dashed:false },
-  ];
+  const leads  = leadsMap[Number(state.answers.monthly_leads)]  || 50;
+  const conv   = convMap [Number(state.answers.lead_to_consult)] || 0.10;
+  const avgTx  = txMap   [Number(state.answers.client_ltv)]     || 350;
+  // Consult-to-treatment close rate — high in medspa (patient is already there)
+  const closeR = 0.78;
+  const baseRev = Math.round(leads * conv * closeR * avgTx);
 
-  const gridLines = [1,2,3,4].map(v => {
+  // ── Quarterly revenue projections ──────────────────────────────────────────
+  // Model: each lever improves linearly from 0% gain at Today to X% gain at Year End.
+  // Revenue at quarter q = baseRev × (1 + gain × q/4)^4  (4 levers compounding)
+  // Conservative: +20% per lever by Year End → 1.20^4 = 2.07× (+107%)
+  // Aggressive:   +50% per lever by Year End → 1.50^4 = 5.06× (+406% ≈ 400%)
+  function proj(gain, q) {
+    return Math.round(baseRev * Math.pow(1 + gain * (q / 4), 4));
+  }
+  const bData = [0,1,2,3,4].map(() => baseRev);
+  const cData = [0,1,2,3,4].map(q => proj(0.20, q));
+  const aData = [0,1,2,3,4].map(q => proj(0.50, q));
+
+  // ── Chart geometry ──────────────────────────────────────────────────────────
+  const ml=56, pw=400, ph=165, yBot=185;
+  const yMax = Math.max(aData[4], 1);
+  function px(q)   { return ml + (q/4)*pw; }
+  function py(val) { return yBot - (val/yMax)*ph; }
+  const fmt = n => n >= 1000000 ? '$' + (n/1000000).toFixed(1) + 'M'
+                 : n >= 1000    ? '$' + Math.round(n/1000) + 'K'
+                 : '$' + n;
+  const pct = (a, b) => b > 0 ? '+' + Math.round((a/b - 1)*100) + '%' : '';
+
+  // ── Y-axis gridlines (5 lines at 0 → yMax) ─────────────────────────────────
+  const gridLines = [0, 0.25, 0.5, 0.75, 1.0].map(f => {
+    const v = Math.round(yMax * f);
     const y = py(v);
     return `<line x1="${ml}" y1="${y}" x2="${ml+pw}" y2="${y}" stroke="#e5e2dd" stroke-width="1"/>
-    <text x="${ml-6}" y="${y+4}" font-size="10" font-family="Arial,sans-serif" fill="#9ca3af" text-anchor="end">${v}×</text>`;
+    <text x="${ml-6}" y="${y+4}" font-size="9" font-family="Arial,sans-serif" fill="#9ca3af" text-anchor="end">${fmt(v)}</text>`;
   }).join('');
 
-  const xLabels = ['Now','Yr 1','Yr 2','Yr 3'].map((lbl,i) =>
+  const xLabels = ['Today','Q1','Q2','Q3','Year End'].map((lbl,i) =>
     `<text x="${px(i)}" y="${yBot+18}" font-size="10" font-family="Arial,sans-serif" fill="#9ca3af" text-anchor="middle">${lbl}</text>`
   ).join('');
 
-  const linesSvg = series.map(s => {
-    const pts  = s.data.map((v,i) => `${px(i)},${py(v)}`).join(' ');
-    const dots = s.data.map((v,i) => `<circle cx="${px(i)}" cy="${py(v)}" r="3.5" fill="${s.color}"/>`).join('');
-    const da   = s.dash ? `stroke-dasharray="${s.dash}"` : '';
-    return `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2.5"
-      stroke-linejoin="round" stroke-linecap="round" ${da}/>
-    ${dots}`;
-  }).join('');
+  const makeLine = (data, color, dash) => {
+    const pts  = data.map((v,i) => `${px(i)},${py(v)}`).join(' ');
+    const dots = data.map((v,i) => `<circle cx="${px(i)}" cy="${py(v)}" r="3.5" fill="${color}"/>`).join('');
+    const da   = dash ? `stroke-dasharray="${dash}"` : '';
+    return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5"
+      stroke-linejoin="round" stroke-linecap="round" ${da}/>${dots}`;
+  };
 
-  const legend = series.map(s =>
+  const legend = [
+    { color:'#d1d5db', dashed:true,  label:'Today\'s pace',               val:`${fmt(baseRev)}/mo` },
+    { color:'#f97316', dashed:false, label:'+20% on each lever (realistic)', val:`${fmt(cData[4])}/mo  (${pct(cData[4],baseRev)})` },
+    { color:'#22c55e', dashed:false, label:'+50% on each lever (full systems)', val:`${fmt(aData[4])}/mo  (${pct(aData[4],baseRev)})` },
+  ].map(s =>
     `<div class="lc-legend-item">
       <div class="lc-swatch" style="background:${s.color};${s.dashed?'opacity:0.45':''}"></div>
-      <span>${s.label} <strong>→ ${s.val} by Yr 3</strong></span>
+      <span>${s.label} <strong>→ ${s.val}</strong></span>
     </div>`
   ).join('');
 
+  const context = `<p style="font-size:11px;color:var(--muted);margin:4px 0 10px;text-align:center;opacity:0.8">
+    Your baseline: ~${leads} leads/mo · ${Math.round(conv*100)}% conversion · ${fmt(avgTx)} avg treatment = ${fmt(baseRev)}/mo
+  </p>`;
+
   return `<div class="line-chart">
     <div class="bc-title">${chart.title}</div>
-    <svg viewBox="0 0 528 228" style="width:100%;height:auto;display:block;overflow:visible">
+    ${context}
+    <svg viewBox="0 0 480 213" style="width:100%;height:auto;display:block;overflow:visible">
       ${gridLines}
-      ${linesSvg}
+      ${makeLine(bData, '#d1d5db', '6 4')}
+      ${makeLine(cData, '#f97316', '')}
+      ${makeLine(aData, '#22c55e', '')}
       ${xLabels}
     </svg>
     <div class="lc-legend">${legend}</div>
