@@ -583,6 +583,14 @@ const ADMIN_EMAIL      = "bert.terhart@gmail.com";
 const CANADA_BBOX      = "41.7,-141.0,83.3,-52.6";
 const OVERPASS_URL     = "https://overpass-api.de/api/interpreter";
 const OVERPASS_TIMEOUT = 180;
+const NOMINATIM_URL    = "https://nominatim.openstreetmap.org/search";
+
+// OSM class|type pairs that indicate a water body
+const WATER_OSM_CLASSES = new Set([
+  "waterway|river", "waterway|stream", "waterway|canal",
+  "natural|water",  "natural|bay",     "natural|strait",
+  "place|sea",      "place|ocean",     "place|bay",
+]);
 
 // KML colours (AABBGGRR — Google Maps / Earth convention)
 const RIVER_LINE_COLOR  = "ffE99B3D";
@@ -676,7 +684,7 @@ window.addEventListener("load", () => {
 //  FEATURE-TYPE AUTO-DETECT  (mirrors water_body_kml.py)
 // ═══════════════════════════════════════════════════════════════════════════
 
-const LAKE_RE  = /\b(lake|lac|reservoir|pond|étang|lagoon|bay|gulf|sound|strait|inlet)\b/i;
+const LAKE_RE  = /\b(lake|lac|reservoir|pond|étang|lagoon|bay|baie|gulf|sound|strait|détroit|inlet)\b/i;
 const RIVER_RE = /\b(river|rivière|creek|brook|stream|canal|coulee|coulée|falls)\b/i;
 
 function guessFeatureType(name) {
@@ -706,6 +714,10 @@ function buildQuery(name, featureType) {
       '["landuse"="reservoir"]',
       '["water"="lake"]',
       '["water"="reservoir"]',
+      '["natural"="bay"]',
+      '["natural"="strait"]',
+      '["place"="sea"]',
+      '["place"="ocean"]',
     ];
   }
 
@@ -964,6 +976,33 @@ function sanitizeFilename(name) {
   return name.replace(/[^\w\-]/g, "_").replace(/^_+|_+$/g, "") + ".kml";
 }
 
+/**
+ * Query Nominatim to resolve the canonical OSM name for a water body.
+ * Returns { name, featureType } or null if no water body result is found.
+ */
+async function nominatimResolve(name) {
+  const params = new URLSearchParams({
+    q: name, format: "json", limit: "5", namedetails: "1", addressdetails: "0",
+  });
+  let results;
+  try {
+    const resp = await fetch(`${NOMINATIM_URL}?${params}`);
+    if (!resp.ok) return null;
+    results = await resp.json();
+  } catch (_) {
+    return null;
+  }
+  for (const r of results) {
+    const key = `${r.class}|${r.type}`;
+    if (!WATER_OSM_CLASSES.has(key)) continue;
+    const canonical = r.namedetails?.name?.trim() || r.display_name?.split(",")[0]?.trim();
+    if (canonical) {
+      return { name: canonical, featureType: r.class === "waterway" ? "river" : "lake" };
+    }
+  }
+  return null;
+}
+
 async function generate() {
   const nameRaw = document.getElementById("name-input").value.trim();
   const typeVal = document.getElementById("type-select").value;
@@ -976,7 +1015,8 @@ async function generate() {
     return;
   }
 
-  const featureType = typeVal === "auto" ? guessFeatureType(nameRaw) : typeVal;
+  let featureType   = typeVal === "auto" ? guessFeatureType(nameRaw) : typeVal;
+  let resolvedName  = nameRaw;
   const filename    = sanitizeFilename(nameRaw);
 
   // ── Reset UI
@@ -1032,13 +1072,60 @@ async function generate() {
 
   qIcon.className    = "status-icon";
   qIcon.textContent  = "✓";
-  const elCount = (data.elements || []).length;
+  let elCount = (data.elements || []).length;
   qText.textContent = `Received ${elCount} OSM element(s).`;
 
   if (!elCount) {
-    addStatus("⚠", `No elements found. Check the name spelling on OpenStreetMap, or try a different feature type.`);
-    document.getElementById("generate-btn").disabled = false;
-    return;
+    // Step 1b — Nominatim fallback
+    const { row: nRow, textEl: nText, iconEl: nIcon } =
+      addStatus(null, `No elements found. Querying Nominatim to resolve canonical name…`, true);
+
+    let resolved = null;
+    try { resolved = await nominatimResolve(nameRaw); } catch (_) {}
+
+    if (!resolved) {
+      nIcon.className = "status-icon"; nIcon.textContent = "⚠";
+      nText.textContent = `Nominatim found no matching water body for "${nameRaw}". Check the spelling on OpenStreetMap.`;
+      document.getElementById("generate-btn").disabled = false;
+      return;
+    }
+
+    nIcon.className = "status-icon"; nIcon.textContent = "✓";
+    nText.textContent = `Nominatim resolved "${nameRaw}" → "${resolved.name}"`;
+    resolvedName = resolved.name;
+    featureType  = resolved.featureType;
+
+    const { row: rRow, textEl: rText, iconEl: rIcon } =
+      addStatus(null, `Retrying Overpass for "${resolvedName}" (${featureType})…`, true);
+
+    try {
+      const retryQuery = buildQuery(resolvedName, featureType);
+      const retryResp  = await fetch(OVERPASS_URL, {
+        method:  "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body:    new URLSearchParams({ data: retryQuery }),
+      });
+      if (!retryResp.ok) throw new Error(`HTTP ${retryResp.status}`);
+      data = await retryResp.json();
+    } catch (err) {
+      rIcon.className = "status-icon"; rIcon.textContent = "✗";
+      rText.textContent = `Retry failed: ${err.message}`;
+      rRow.style.color  = "var(--red)";
+      document.getElementById("generate-btn").disabled = false;
+      return;
+    }
+
+    elCount = (data.elements || []).length;
+    rIcon.className = "status-icon";
+    rIcon.textContent = elCount ? "✓" : "⚠";
+    rText.textContent = elCount
+      ? `Received ${elCount} OSM element(s) for "${resolvedName}".`
+      : `No elements found for "${resolvedName}". Try a different feature type or check OpenStreetMap.`;
+
+    if (!elCount) {
+      document.getElementById("generate-btn").disabled = false;
+      return;
+    }
   }
 
   // Step 2 — build KML
@@ -1047,7 +1134,7 @@ async function generate() {
 
   let kmlResult;
   try {
-    kmlResult = buildKml(nameRaw, data.elements, featureType);
+    kmlResult = buildKml(resolvedName, data.elements, featureType);
   } catch (err) {
     bIcon.className    = "status-icon";
     bIcon.textContent  = "✗";
@@ -1070,7 +1157,7 @@ async function generate() {
   meta.innerHTML = `
     <div class="meta-item">
       <div class="meta-label">Name</div>
-      <div class="meta-value">${escXml(nameRaw)}</div>
+      <div class="meta-value">${escXml(resolvedName)}</div>
     </div>
     <div class="meta-item">
       <div class="meta-label">Type</div>
@@ -1091,7 +1178,7 @@ async function generate() {
   document.getElementById("result-card").style.display = "block";
 
   // ── Add to history
-  history.unshift({ name: nameRaw, type: featureType, nodeCount: kmlResult.nodeCount,
+  history.unshift({ name: resolvedName, type: featureType, nodeCount: kmlResult.nodeCount,
                     kml: kmlResult.kml, filename });
   renderHistory();
 
@@ -1210,10 +1297,10 @@ async function generateBatch() {
   const failed  = [];  // { name, reason }
 
   for (let i = 0; i < entries.length; i++) {
-    const { name, type } = entries[i];
+    let { name, type } = entries[i];
     batchCounter.textContent = `(${i + 1} / ${entries.length})`;
 
-    const featureType = (type === "auto" || !["river", "lake"].includes(type))
+    let featureType = (type === "auto" || !["river", "lake"].includes(type))
       ? guessFeatureType(name)
       : type;
 
@@ -1256,8 +1343,27 @@ async function generateBatch() {
         break;
       }
 
-      const elements = data.elements || [];
-      if (!elements.length) throw new Error("No OSM elements found — check the name spelling");
+      let elements = data.elements || [];
+      if (!elements.length) {
+        // Nominatim fallback
+        textEl.textContent = `${name} — querying Nominatim for canonical name…`;
+        const resolved = await nominatimResolve(name).catch(() => null);
+        if (resolved) {
+          textEl.textContent = `${name} → "${resolved.name}" — retrying…`;
+          name        = resolved.name;
+          featureType = resolved.featureType;
+          const retryQuery = buildQuery(name, featureType);
+          const retryResp  = await fetch(OVERPASS_URL, {
+            method:  "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body:    new URLSearchParams({ data: retryQuery }),
+          });
+          if (!retryResp.ok) throw new Error(`HTTP ${retryResp.status} on Nominatim retry`);
+          const retryData = await retryResp.json();
+          elements = retryData.elements || [];
+        }
+        if (!elements.length) throw new Error("No OSM elements found — check the name spelling");
+      }
 
       const kmlResult = buildKml(name, elements, featureType);
       const filename  = sanitizeFilename(name);

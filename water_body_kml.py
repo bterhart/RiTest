@@ -38,9 +38,19 @@ CANADA_BBOX = "41.7,-141.0,83.3,-52.6"
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 OVERPASS_TIMEOUT = 180  # seconds for the server-side query
 
+NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
+_USER_AGENT = "WaterBodyKML/1.0 (educational; Canadian rivers/lakes)"
+
 # Retry settings for transient network / server errors
 MAX_RETRIES = 4
 RETRY_DELAYS = [2, 4, 8, 16]
+
+# OSM class/type combinations that indicate a water body
+_WATER_OSM_CLASSES = {
+    ("waterway", "river"), ("waterway", "stream"), ("waterway", "canal"),
+    ("natural", "water"), ("natural", "bay"), ("natural", "strait"),
+    ("place", "sea"), ("place", "ocean"), ("place", "bay"),
+}
 
 # KML colours in AABBGGRR format (Google Earth / Maps convention).
 # R=0xE9, G=0x9B, B=0x3D  →  a medium river-blue
@@ -64,12 +74,16 @@ def _build_query(name: str, feature_type: str) -> str:
             '["waterway"="stream"]',
             '["waterway"="canal"]',
         ]
-    else:  # lake / reservoir / pond
+    else:  # lake / reservoir / pond / bay / strait / sound / sea
         tags = [
             '["natural"="water"]',
             '["landuse"="reservoir"]',
             '["water"="lake"]',
             '["water"="reservoir"]',
+            '["natural"="bay"]',
+            '["natural"="strait"]',
+            '["place"="sea"]',
+            '["place"="ocean"]',
         ]
 
     clauses = []
@@ -87,7 +101,7 @@ def _http_post(query: str) -> dict:
     request = urllib.request.Request(
         OVERPASS_URL,
         data=data,
-        headers={"User-Agent": "WaterBodyKML/1.0 (educational; Canadian rivers/lakes)"},
+        headers={"User-Agent": _USER_AGENT},
     )
     for attempt, delay in enumerate(RETRY_DELAYS + [None], 1):
         try:
@@ -102,11 +116,67 @@ def _http_post(query: str) -> dict:
     raise RuntimeError("Unreachable")  # pragma: no cover
 
 
-def fetch_water_body(name: str, feature_type: str) -> dict:
-    """Query Overpass and return the raw JSON response."""
+def _nominatim_resolve(name: str) -> Optional[tuple[str, str]]:
+    """Query Nominatim to find the canonical OSM name for a water body.
+
+    Returns (canonical_name, feature_type) drawn from the first matching
+    water-body result, or None if nothing suitable is found.
+    """
+    params = urllib.parse.urlencode({
+        "q": name,
+        "format": "json",
+        "limit": "5",
+        "namedetails": "1",
+        "addressdetails": "0",
+    })
+    req = urllib.request.Request(
+        f"{NOMINATIM_URL}?{params}",
+        headers={"User-Agent": _USER_AGENT},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            results = json.loads(resp.read().decode("utf-8"))
+    except Exception as exc:
+        print(f"  [nominatim] Request failed: {exc}", file=sys.stderr)
+        return None
+
+    for result in results:
+        cls = result.get("class", "")
+        typ = result.get("type", "")
+        if (cls, typ) not in _WATER_OSM_CLASSES:
+            continue
+        canonical = result.get("namedetails", {}).get("name", "").strip()
+        if not canonical:
+            canonical = result.get("display_name", "").split(",")[0].strip()
+        if canonical:
+            resolved_type = "river" if cls == "waterway" else "lake"
+            return canonical, resolved_type
+
+    return None
+
+
+def fetch_water_body(name: str, feature_type: str) -> tuple[dict, str, str]:
+    """Query Overpass; fall back to Nominatim name resolution if needed.
+
+    Returns (response_data, resolved_name, resolved_feature_type).
+    """
     query = _build_query(name, feature_type)
     print(f"  Querying Overpass API for '{name}' ({feature_type}) …", file=sys.stderr)
-    return _http_post(query)
+    data = _http_post(query)
+
+    if not data.get("elements"):
+        print(f"  No results. Querying Nominatim to resolve canonical name …", file=sys.stderr)
+        resolved = _nominatim_resolve(name)
+        if resolved:
+            canonical_name, canonical_type = resolved
+            print(f"  Nominatim: '{name}' → '{canonical_name}' ({canonical_type})", file=sys.stderr)
+            query = _build_query(canonical_name, canonical_type)
+            data = _http_post(query)
+            return data, canonical_name, canonical_type
+        else:
+            print(f"  Nominatim found no matching water body.", file=sys.stderr)
+
+    return data, name, feature_type
 
 
 # ── geometry helpers ───────────────────────────────────────────────────────────
@@ -335,7 +405,7 @@ def build_kml(name: str, elements: list[dict], feature_type: str) -> str:
 # ── auto-detect feature type ───────────────────────────────────────────────────
 
 _LAKE_KEYWORDS = re.compile(
-    r"\b(lake|lac|reservoir|pond|étang|lagoon|bay|gulf|sound|strait|inlet)\b",
+    r"\b(lake|lac|reservoir|pond|étang|lagoon|bay|baie|gulf|sound|strait|détroit|inlet)\b",
     re.IGNORECASE,
 )
 _RIVER_KEYWORDS = re.compile(
@@ -391,19 +461,20 @@ Examples:
 
     name: str = args.name.strip()
     feature_type: str = args.feature_type or guess_feature_type(name)
-    output_path: str = args.output or sanitize_filename(name)
 
     print(f"\nWater Body KML Generator", file=sys.stderr)
     print(f"  Name        : {name}", file=sys.stderr)
     print(f"  Feature type: {feature_type}", file=sys.stderr)
-    print(f"  Output      : {output_path}", file=sys.stderr)
     print("", file=sys.stderr)
 
     try:
-        response = fetch_water_body(name, feature_type)
+        response, name, feature_type = fetch_water_body(name, feature_type)
     except RuntimeError as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
+
+    output_path: str = args.output or sanitize_filename(name)
+    print(f"  Output      : {output_path}", file=sys.stderr)
 
     elements = response.get("elements", [])
     print(f"  Received {len(elements)} OSM element(s).", file=sys.stderr)
